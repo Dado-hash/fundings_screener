@@ -14,7 +14,7 @@ Un'applicazione web completa per monitorare e analizzare i funding rates delle c
   - Spread elevati (spread 50-100 bps)
   - Spread bassi (spread < 50 bps)
 
-- **Interface utente moderna** con:
+- **Interfaccia utente moderna** con:
   - Filtri avanzati per spread e tipologie
   - Statistiche aggregate
   - Aggiornamento automatico ogni 5 minuti
