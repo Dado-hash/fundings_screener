@@ -87,17 +87,23 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            DeFi Perp Funding Rates - Maximum Spread Analysis
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2 px-2">
+            <span className="hidden sm:inline">DeFi Perp Funding Rates - Maximum Spread Analysis</span>
+            <span className="sm:hidden">DeFi Funding Rates</span>
           </h1>
-          <p className="text-lg text-slate-600">
-            Trova le migliori opportunità di arbitraggio analizzando automaticamente i DEX con il maggior spread
+          <p className="text-sm sm:text-base lg:text-lg text-slate-600 px-2">
+            <span className="hidden sm:inline">
+              Trova le migliori opportunità di arbitraggio analizzando automaticamente i DEX con il maggior spread
+            </span>
+            <span className="sm:hidden">
+              Opportunità di arbitraggio sui DEX
+            </span>
           </p>
           {lastUpdate && (
-            <p className="text-sm text-slate-500 mt-2">
+            <p className="text-xs sm:text-sm text-slate-500 mt-2 px-2">
               Ultimo aggiornamento: {new Date(lastUpdate).toLocaleString('it-IT')}
             </p>
           )}
@@ -105,12 +111,12 @@ const Index = () => {
 
         <FundingRatesStats data={filteredData} />
         
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Filtri</h2>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold">Filtri</h2>
             <button 
               onClick={refetch}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm self-start sm:self-auto"
             >
               Aggiorna Dati
             </button>

@@ -43,66 +43,93 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filtri Opportunità
+            <span className="text-base sm:text-lg">Filtri Opportunità</span>
             {getActiveFiltersCount() > 0 && (
               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                 {getActiveFiltersCount()} attivi
               </span>
             )}
           </div>
-          <Button variant="outline" size="sm" onClick={resetFilters}>
+          <Button variant="outline" size="sm" onClick={resetFilters} className="self-start">
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center space-x-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
             <Switch
               id="arbitrage-opportunities"
               checked={filters.showArbitrageOpportunities}
               onCheckedChange={() => handleFilterToggle('showArbitrageOpportunities')}
+              className="mt-1"
             />
-            <Label htmlFor="arbitrage-opportunities" className="text-sm font-medium">
-              Best Arbitrage
-              <span className="block text-xs text-slate-500">
-                Rates opposti con spread elevato
-              </span>
+            <Label htmlFor="arbitrage-opportunities" className="text-sm font-medium cursor-pointer flex-1">
+              <div className="font-semibold text-slate-900">Best Arbitrage</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Opportunità con rates opposti e spread elevato
+              </div>
             </Label>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
             <Switch
               id="high-spread"
               checked={filters.showHighSpread}
               onCheckedChange={() => handleFilterToggle('showHighSpread')}
+              className="mt-1"
             />
-            <Label htmlFor="high-spread" className="text-sm font-medium">
-              High Spread
-              <span className="block text-xs text-slate-500">
-                Spread massimo &gt; 100 bps
-              </span>
+            <Label htmlFor="high-spread" className="text-sm font-medium cursor-pointer flex-1">
+              <div className="font-semibold text-slate-900">High Spread</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Spread massimo maggiore di 100 bps
+              </div>
             </Label>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors sm:col-span-2 lg:col-span-1">
             <Switch
               id="low-spread"
               checked={filters.showLowSpread}
               onCheckedChange={() => handleFilterToggle('showLowSpread')}
+              className="mt-1"
             />
-            <Label htmlFor="low-spread" className="text-sm font-medium">
-              Low Spread
-              <span className="block text-xs text-slate-500">
-                Spread massimo &lt; 100 bps
-              </span>
+            <Label htmlFor="low-spread" className="text-sm font-medium cursor-pointer flex-1">
+              <div className="font-semibold text-slate-900">Low Spread</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Spread massimo minore di 100 bps
+              </div>
             </Label>
           </div>
         </div>
+        
+        {/* Active Filters Summary - Mobile */}
+        {getActiveFiltersCount() > 0 && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg sm:hidden">
+            <div className="text-sm font-medium text-blue-900 mb-2">Filtri Attivi:</div>
+            <div className="flex flex-wrap gap-2">
+              {filters.showArbitrageOpportunities && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Best Arbitrage
+                </span>
+              )}
+              {filters.showHighSpread && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  High Spread
+                </span>
+              )}
+              {filters.showLowSpread && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  Low Spread
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
