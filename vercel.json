@@ -4,10 +4,10 @@
   "installCommand": "cd frontend && npm install",
   "functions": {
     "api/funding-rates.py": {
-      "runtime": "python3.9"
+      "runtime": "@vercel/python@4.1.0"
     },
     "api/health.py": {
-      "runtime": "python3.9"
+      "runtime": "@vercel/python@4.1.0"
     }
   },
   "routes": [
