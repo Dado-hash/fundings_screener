@@ -1,29 +1,19 @@
 {
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install",
+  "functions": {
+    "api/funding-rates.py": {
+      "runtime": "python3.9"
     },
-    {
-      "src": "api/funding-rates.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/health.py",
-      "use": "@vercel/python"
+    "api/health.py": {
+      "runtime": "python3.9"
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/api/funding-rates",
-      "dest": "/api/funding-rates.py"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/health.py"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
       "src": "/(.*)",
