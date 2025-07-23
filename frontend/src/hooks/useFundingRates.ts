@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FundingRateData } from '../data/mockFundingData';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5000/api';
 
 interface ApiResponse {
   data: FundingRateData[];
