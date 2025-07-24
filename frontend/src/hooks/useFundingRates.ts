@@ -43,21 +43,16 @@ export const useFundingRates = () => {
   useEffect(() => {
     fetchFundingRates();
     
-    // Refresh data every 5 minutes
-    const interval = setInterval(fetchFundingRates, 5 * 60 * 1000);
+    // Check for updates every 30 seconds (il backend si aggiorna ogni 3 minuti)
+    const interval = setInterval(fetchFundingRates, 30 * 1000);
     
     return () => clearInterval(interval);
   }, []);
-
-  const refetch = () => {
-    fetchFundingRates();
-  };
 
   return {
     data,
     loading,
     error,
-    lastUpdate,
-    refetch
+    lastUpdate
   };
 };

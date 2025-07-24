@@ -7,7 +7,7 @@ import { useFundingRates } from '../hooks/useFundingRates';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
 
 const Index = () => {
-  const { data: fundingData, loading, error, lastUpdate, refetch } = useFundingRates();
+  const { data: fundingData, loading, error, lastUpdate } = useFundingRates();
   const [filteredData, setFilteredData] = useState(fundingData);
   const [activeFilters, setActiveFilters] = useState({
     showArbitrageOpportunities: false,
@@ -19,13 +19,22 @@ const Index = () => {
 
   // Update filtered data when funding data changes
   useEffect(() => {
-    setFilteredData(fundingData);
+    // Filtra automaticamente i mercati con max spread 0.0 bps
+    const filtered = fundingData.filter(item => {
+      const maxSpread = calculateMaxSpread(item.dexRates);
+      return maxSpread.spread > 0;
+    });
+    setFilteredData(filtered);
   }, [fundingData]);
 
   const handleFilterChange = (filters: typeof activeFilters) => {
     setActiveFilters(filters);
     
-    let filtered = fundingData;
+    // Inizia sempre con i dati già filtrati per escludere spread 0.0
+    let filtered = fundingData.filter(item => {
+      const maxSpread = calculateMaxSpread(item.dexRates);
+      return maxSpread.spread > 0;
+    });
     
     if (filters.showArbitrageOpportunities) {
       filtered = filtered.filter(item => {
@@ -75,12 +84,7 @@ const Index = () => {
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Errore nel caricamento</h2>
           <p className="text-slate-600 mb-4">{error}</p>
-          <button 
-            onClick={refetch}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Riprova
-          </button>
+          <p className="text-slate-500 text-sm">I dati verranno aggiornati automaticamente ogni 3 minuti</p>
         </div>
       </div>
     );
@@ -114,12 +118,9 @@ const Index = () => {
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
             <h2 className="text-lg sm:text-xl font-semibold">Filtri</h2>
-            <button 
-              onClick={refetch}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm self-start sm:self-auto"
-            >
-              Aggiorna Dati
-            </button>
+            <div className="text-xs sm:text-sm text-slate-500 self-start sm:self-auto">
+              Aggiornamento automatico ogni 3 minuti
+            </div>
           </div>
           <FundingRatesFilters 
             filters={activeFilters}

@@ -12,7 +12,9 @@ CORS(app)
 # Cache per i dati dei funding rates
 funding_cache = {}
 last_update = None
-CACHE_DURATION = 300  # 5 minuti
+CACHE_DURATION = 180  # 3 minuti
+background_thread = None
+app_initialized = False
 
 def get_dydx_funding_rates():
     """Ottiene i funding rates da dYdX"""
@@ -95,8 +97,34 @@ def get_paradex_funding_rates():
         print(f"Errore Paradex: {e}")
         return {}
 
+def get_extended_funding_rates():
+    """Ottiene i funding rates da Extended Exchange"""
+    try:
+        EXTENDED_API = "https://api.extended.exchange/api/v1/"
+        url = f"{EXTENDED_API}/info/markets"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        rates = {}
+        for item in data['data']:
+            try:
+                symbol = item['name']
+                # Rimuovi il suffisso -USD
+                symbol = symbol.replace("-USD", "")
+                funding_rate = float(item['marketStats']['fundingRate'])
+                annualized_rate = funding_rate * 24 * 365 * 100
+                rates[symbol] = annualized_rate
+            except Exception:
+                continue
+        
+        return rates
+    except Exception as e:
+        print(f"Errore Extended: {e}")
+        return {}
+
 def fetch_all_funding_rates():
-    """Fetch funding rates da tutti e 3 i DEX"""
+    """Fetch funding rates da tutti i DEX"""
     print("Fetching funding rates...")
     
     # Fetch in parallelo usando threading
@@ -112,9 +140,13 @@ def fetch_all_funding_rates():
     def fetch_paradex():
         results['paradex'] = get_paradex_funding_rates()
     
+    def fetch_extended():
+        results['extended'] = get_extended_funding_rates()
+    
     threads.append(threading.Thread(target=fetch_dydx))
     threads.append(threading.Thread(target=fetch_hyperliquid))
     threads.append(threading.Thread(target=fetch_paradex))
+    threads.append(threading.Thread(target=fetch_extended))
     
     for thread in threads:
         thread.start()
@@ -123,6 +155,32 @@ def fetch_all_funding_rates():
         thread.join()
     
     return results
+
+def update_funding_rates_background():
+    """Aggiorna i funding rates in background ogni 3 minuti"""
+    global funding_cache, last_update
+    
+    while True:
+        try:
+            print("Background update: Fetching new funding rates...")
+            dex_data = fetch_all_funding_rates()
+            funding_cache = combine_funding_data(dex_data)
+            last_update = time.time()
+            print(f"Background update: Updated data for {len(funding_cache)} markets")
+        except Exception as e:
+            print(f"Background update error: {e}")
+        
+        # Attendi 3 minuti prima del prossimo aggiornamento
+        time.sleep(CACHE_DURATION)
+
+def start_background_updates():
+    """Avvia il thread di aggiornamento in background"""
+    global background_thread
+    
+    if background_thread is None or not background_thread.is_alive():
+        background_thread = threading.Thread(target=update_funding_rates_background, daemon=True)
+        background_thread.start()
+        print("Background updates thread started")
 
 def combine_funding_data(dex_data):
     """Combina i dati di tutti i DEX in un formato uniforme"""
@@ -157,6 +215,13 @@ def combine_funding_data(dex_data):
                 'rate': round(dex_data['paradex'][market], 2)
             })
         
+        # Extended
+        if market in dex_data.get('extended', {}):
+            dex_rates.append({
+                'dex': 'Extended',
+                'rate': round(dex_data['extended'][market], 2)
+            })
+        
         # Includi solo mercati con almeno 2 DEX
         if len(dex_rates) >= 2:
             combined_data.append({
@@ -172,25 +237,28 @@ def combine_funding_data(dex_data):
 @app.route('/api/funding-rates', methods=['GET'])
 def get_funding_rates():
     """Endpoint per ottenere i funding rates"""
-    global funding_cache, last_update
+    global funding_cache, last_update, app_initialized
     
-    # Controlla se la cache è ancora valida
-    current_time = time.time()
-    if (last_update is None or 
-        current_time - last_update > CACHE_DURATION or 
-        not funding_cache):
-        
-        print("Cache expired, fetching new data...")
+    # Al primo avvio, carica immediatamente i dati e avvia il background thread
+    if not app_initialized:
+        print("First startup: Loading initial data...")
         try:
-            # Fetch nuovi dati
             dex_data = fetch_all_funding_rates()
             funding_cache = combine_funding_data(dex_data)
-            last_update = current_time
-            print(f"Fetched data for {len(funding_cache)} markets")
+            last_update = time.time()
+            print(f"Initial data loaded for {len(funding_cache)} markets")
+            
+            # Avvia gli aggiornamenti in background
+            start_background_updates()
+            app_initialized = True
+            
         except Exception as e:
-            print(f"Errore nel fetch dei dati: {e}")
-            if not funding_cache:  # Se non abbiamo cache, ritorna errore
-                return jsonify({'error': 'Unable to fetch funding rates'}), 500
+            print(f"Errore nel caricamento iniziale: {e}")
+            return jsonify({'error': 'Unable to fetch funding rates'}), 500
+    
+    # Se non abbiamo ancora dati (possibile solo in caso di errore iniziale)
+    if not funding_cache:
+        return jsonify({'error': 'No data available'}), 500
     
     return jsonify({
         'data': funding_cache,

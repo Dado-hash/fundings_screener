@@ -10,7 +10,7 @@ _cache = {
     'data': [],
     'last_update': None
 }
-CACHE_DURATION = 300  # 5 minuti
+CACHE_DURATION = 180  # 3 minuti
 
 def get_dydx_funding_rates():
     """Ottiene i funding rates da dYdX"""
@@ -93,8 +93,34 @@ def get_paradex_funding_rates():
         print(f"Errore Paradex: {e}")
         return {}
 
+def get_extended_funding_rates():
+    """Ottiene i funding rates da Extended Exchange"""
+    try:
+        EXTENDED_API = "https://api.extended.exchange/api/v1/"
+        url = f"{EXTENDED_API}/info/markets"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        rates = {}
+        for item in data['data']:
+            try:
+                symbol = item['name']
+                # Rimuovi il suffisso -USD
+                symbol = symbol.replace("-USD", "")
+                funding_rate = float(item['marketStats']['fundingRate'])
+                annualized_rate = funding_rate * 24 * 365 * 100
+                rates[symbol] = annualized_rate
+            except Exception:
+                continue
+        
+        return rates
+    except Exception as e:
+        print(f"Errore Extended: {e}")
+        return {}
+
 def fetch_all_funding_rates():
-    """Fetch funding rates da tutti e 3 i DEX"""
+    """Fetch funding rates da tutti i DEX"""
     print("Fetching funding rates...")
     
     # Fetch in parallelo usando threading
@@ -110,9 +136,13 @@ def fetch_all_funding_rates():
     def fetch_paradex():
         results['paradex'] = get_paradex_funding_rates()
     
+    def fetch_extended():
+        results['extended'] = get_extended_funding_rates()
+    
     threads.append(threading.Thread(target=fetch_dydx))
     threads.append(threading.Thread(target=fetch_hyperliquid))
     threads.append(threading.Thread(target=fetch_paradex))
+    threads.append(threading.Thread(target=fetch_extended))
     
     for thread in threads:
         thread.start()
@@ -153,6 +183,13 @@ def combine_funding_data(dex_data):
             dex_rates.append({
                 'dex': 'Paradex',
                 'rate': round(dex_data['paradex'][market], 2)
+            })
+        
+        # Extended
+        if market in dex_data.get('extended', {}):
+            dex_rates.append({
+                'dex': 'Extended',
+                'rate': round(dex_data['extended'][market], 2)
             })
         
         # Includi solo mercati con almeno 2 DEX
