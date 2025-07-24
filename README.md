@@ -4,10 +4,11 @@ Un'applicazione web completa per monitorare e analizzare i funding rates delle c
 
 ## 🎯 Caratteristiche
 
-- **Dati in tempo reale** da 3 DEX principali:
+- **Dati in tempo reale** da 4 DEX principali:
   - **dYdX**: Funding rates per mercati perpetui
   - **Hyperliquid**: Predicted funding rates
   - **Paradex**: Funding rates per mercati PERP
+  - **Extended Exchange**: Funding rates per mercati perpetui
 
 - **Analisi automatica degli spread** per identificare:
   - Opportunità di arbitraggio (spread > 100 bps)
@@ -17,16 +18,19 @@ Un'applicazione web completa per monitorare e analizzare i funding rates delle c
 - **Interfaccia utente moderna** con:
   - Filtri avanzati per spread e tipologie
   - Statistiche aggregate
-  - Aggiornamento automatico ogni 5 minuti
+  - Aggiornamento automatico ogni 3 minuti
   - Visualizzazione tabellare ordinabile
+  - Esclusione automatica mercati con spread 0.0 bps
 
 ## 🏗️ Architettura
 
 ### Backend (Flask)
 - **API REST** per servire i dati di funding rates
-- **Cache intelligente** (5 minuti) per ottimizzare le performance
-- **Fetch parallelo** dai 3 DEX per ridurre la latenza
+- **Aggiornamento automatico** in background ogni 3 minuti
+- **Fetch parallelo** dai 4 DEX per ridurre la latenza
 - **Gestione errori** robusta per API esterne
+- **Cache intelligente** con background thread per performance ottimali
+- **Deployment flessibile**: Locale (Flask) e cloud (Vercel)
 
 ### Frontend (React + TypeScript)
 - **React 18** con Vite per build veloce
@@ -106,10 +110,19 @@ npm run dev
 
 ### Filtri Disponibili
 
+- **Filtro automatico**: Esclude automaticamente mercati con spread 0.0 bps
 - **Mostra solo opportunità di arbitraggio**: Filtra solo asset con spread > 100 bps
 - **Mostra spread elevati**: Asset con spread tra 50-100 bps
 - **Mostra spread bassi**: Asset con spread < 50 bps
 - **Range spread personalizzato**: Imposta min/max spread manualmente
+
+### Sistema di Aggiornamento
+
+L'applicazione utilizza un **sistema completamente automatico**:
+- **Backend**: Thread in background aggiorna i dati ogni 3 minuti
+- **Frontend**: Controlla ogni 30 secondi per nuovi dati disponibili
+- **Nessun controllo manuale**: L'utente non può forzare aggiornamenti
+- **Zero attesa**: I dati sono sempre disponibili dalla cache
 
 ## 🔧 API Endpoints
 
@@ -143,10 +156,11 @@ Health check del backend.
 ## 🔄 Funzionalità Tecniche
 
 ### Caching e Performance
-- Cache backend di 5 minuti per ridurre chiamate API
-- Fetch parallelo da tutti i DEX
-- Aggiornamento automatico frontend ogni 5 minuti
-- Lazy loading e ottimizzazioni React
+- **Background threading**: Aggiornamento automatico ogni 3 minuti
+- **Fetch parallelo** da tutti i 4 DEX simultaneamente
+- **Polling frontend** ogni 30 secondi per nuovi dati
+- **Cache intelligente**: Dati sempre disponibili, zero attesa per l'utente
+- **Lazy loading** e ottimizzazioni React
 
 ### Error Handling
 - Retry automatico su errori di rete
@@ -165,6 +179,8 @@ Health check del backend.
 ### Struttura del Progetto
 ```
 fundings_screener/
+├── api/
+│   └── funding-rates.py    # API Vercel function
 ├── backend/
 │   ├── app.py              # Server Flask principale
 │   └── requirements.txt    # Dipendenze Python
@@ -175,8 +191,10 @@ fundings_screener/
 │   │   ├── pages/         # Pagine dell'app
 │   │   └── utils/         # Utility functions
 │   └── package.json       # Dipendenze Node.js
-├── test_*.py              # Script originali per testing
+├── test_*.py              # Script testing per ogni DEX
 ├── start.sh               # Script di avvio automatico
+├── vercel.json            # Configurazione deployment Vercel
+├── CLAUDE.md              # Documentazione dettagliata per Claude
 └── README.md
 ```
 
@@ -192,12 +210,16 @@ fundings_screener/
 
 ## 📈 Roadmap
 
+- [x] ✅ **Extended Exchange** integrato
+- [x] ✅ **Aggiornamento automatico** ogni 3 minuti
+- [x] ✅ **Deploy Vercel** configurato
+- [x] ✅ **Filtro spread 0.0** automatico
 - [ ] Aggiungere più DEX (GMX, Gains Network, ecc.)
 - [ ] Implementare WebSocket per dati real-time
 - [ ] Aggiungere grafici storici
 - [ ] Implementare alert personalizzabili
 - [ ] Aggiungere calcolo PnL per strategie
-- [ ] Deploy su cloud (AWS/Vercel)
+- [ ] Dati volume e open interest reali
 
 ## 🤝 Contribuire
 
