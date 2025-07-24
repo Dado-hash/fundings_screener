@@ -10,7 +10,7 @@ _cache = {
     'data': [],
     'last_update': None
 }
-CACHE_DURATION = 180  # 3 minuti
+CACHE_DURATION = 600  # 10 minuti
 
 def get_dydx_funding_rates():
     """Ottiene i funding rates da dYdX"""
