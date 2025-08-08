@@ -5,7 +5,7 @@ import threading
 import time
 from datetime import datetime
 
-# Cache globale per i dati
+# Global cache for data
 _cache = {
     'data': [],
     'last_update': None
@@ -13,7 +13,7 @@ _cache = {
 CACHE_DURATION = 600  # 10 minuti
 
 def get_dydx_funding_rates():
-    """Ottiene i funding rates da dYdX"""
+    """Get funding rates from dYdX"""
     try:
         url = "https://indexer.dydx.trade/v4/perpetualMarkets"
         r = requests.get(url, timeout=10)
@@ -31,11 +31,11 @@ def get_dydx_funding_rates():
                 continue
         return rates
     except Exception as e:
-        print(f"Errore dYdX: {e}")
+        print(f"dYdX Error: {e}")
         return {}
 
 def get_hyperliquid_funding_rates():
-    """Ottiene i funding rates da Hyperliquid"""
+    """Get funding rates from Hyperliquid"""
     try:
         BASE_URL = "https://api.hyperliquid.xyz/info"
         payload = {"type": "metaAndAssetCtxs"}
@@ -54,15 +54,15 @@ def get_hyperliquid_funding_rates():
             return rates
         return {}
     except Exception as e:
-        print(f"Errore Hyperliquid: {e}")
+        print(f"Hyperliquid Error: {e}")
         return {}
 
 def get_paradex_funding_rates():
-    """Ottiene i funding rates da Paradex"""
+    """Get funding rates from Paradex"""
     try:
         BASE_URL = "https://api.prod.paradex.trade/v1"
         
-        # Ottieni tutti i mercati
+        # Get all markets
         response = requests.get(f"{BASE_URL}/markets", timeout=10)
         response.raise_for_status()
         data = response.json()
@@ -73,7 +73,7 @@ def get_paradex_funding_rates():
                 symbol = market['symbol']
                 markets.append(symbol)
         
-        # Ottieni funding rates per ogni mercato
+        # Get funding rates for each market
         rates = {}
         for market in markets:
             try:
@@ -90,11 +90,11 @@ def get_paradex_funding_rates():
         
         return rates
     except Exception as e:
-        print(f"Errore Paradex: {e}")
+        print(f"Paradex Error: {e}")
         return {}
 
 def get_extended_funding_rates():
-    """Ottiene i funding rates da Extended Exchange"""
+    """Get funding rates from Extended Exchange"""
     try:
         EXTENDED_API = "https://api.extended.exchange/api/v1/"
         url = f"{EXTENDED_API}/info/markets"
@@ -106,7 +106,7 @@ def get_extended_funding_rates():
         for item in data['data']:
             try:
                 symbol = item['name']
-                # Rimuovi il suffisso -USD
+                # Remove -USD suffix
                 symbol = symbol.replace("-USD", "")
                 funding_rate = float(item['marketStats']['fundingRate'])
                 annualized_rate = funding_rate * 24 * 365 * 100
@@ -116,14 +116,14 @@ def get_extended_funding_rates():
         
         return rates
     except Exception as e:
-        print(f"Errore Extended: {e}")
+        print(f"Extended Error: {e}")
         return {}
 
 def fetch_all_funding_rates():
-    """Fetch funding rates da tutti i DEX"""
+    """Fetch funding rates from all DEXs"""
     print("Fetching funding rates...")
     
-    # Fetch in parallelo usando threading
+    # Fetch in parallel using threading
     results = {}
     threads = []
     
@@ -153,10 +153,10 @@ def fetch_all_funding_rates():
     return results
 
 def combine_funding_data(dex_data):
-    """Combina i dati di tutti i DEX in un formato uniforme"""
+    """Combine data from all DEXs in uniform format"""
     combined_data = []
     
-    # Ottieni tutti i mercati unici
+    # Get all unique markets
     all_markets = set()
     for dex_name, rates in dex_data.items():
         all_markets.update(rates.keys())
@@ -192,7 +192,7 @@ def combine_funding_data(dex_data):
                 'rate': round(dex_data['extended'][market], 2)
             })
         
-        # Includi solo mercati con almeno 2 DEX
+        # Include only markets with at least 2 DEXs
         if len(dex_rates) >= 2:
             combined_data.append({
                 'market': f"{market}-USD",
@@ -208,7 +208,7 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         global _cache
         
-        # Headers per CORS
+        # Headers for CORS
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -217,14 +217,14 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         
         try:
-            # Controlla se la cache è ancora valida
+            # Check if cache is still valid
             current_time = time.time()
             if (_cache['last_update'] is None or 
                 current_time - _cache['last_update'] > CACHE_DURATION or 
                 not _cache['data']):
                 
                 print("Cache expired, fetching new data...")
-                # Fetch nuovi dati
+                # Fetch new data
                 dex_data = fetch_all_funding_rates()
                 _cache['data'] = combine_funding_data(dex_data)
                 _cache['last_update'] = current_time
@@ -239,7 +239,7 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response_data).encode())
             
         except Exception as e:
-            print(f"Errore: {e}")
+            print(f"Error: {e}")
             error_response = {'error': 'Unable to fetch funding rates'}
             self.wfile.write(json.dumps(error_response).encode())
     

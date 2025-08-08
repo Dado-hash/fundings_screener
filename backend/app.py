@@ -17,7 +17,7 @@ background_thread = None
 app_initialized = False
 
 def get_dydx_funding_rates():
-    """Ottiene i funding rates da dYdX"""
+    """Get funding rates from dYdX"""
     try:
         url = "https://indexer.dydx.trade/v4/perpetualMarkets"
         r = requests.get(url, timeout=10)
@@ -35,11 +35,11 @@ def get_dydx_funding_rates():
                 continue
         return rates
     except Exception as e:
-        print(f"Errore dYdX: {e}")
+        print(f"dYdX Error: {e}")
         return {}
 
 def get_hyperliquid_funding_rates():
-    """Ottiene i funding rates da Hyperliquid"""
+    """Get funding rates from Hyperliquid"""
     try:
         BASE_URL = "https://api.hyperliquid.xyz/info"
         payload = {"type": "metaAndAssetCtxs"}
@@ -58,15 +58,15 @@ def get_hyperliquid_funding_rates():
             return rates
         return {}
     except Exception as e:
-        print(f"Errore Hyperliquid: {e}")
+        print(f"Hyperliquid Error: {e}")
         return {}
 
 def get_paradex_funding_rates():
-    """Ottiene i funding rates da Paradex"""
+    """Get funding rates from Paradex"""
     try:
         BASE_URL = "https://api.prod.paradex.trade/v1"
         
-        # Ottieni tutti i mercati
+        # Get all markets
         response = requests.get(f"{BASE_URL}/markets", timeout=10)
         response.raise_for_status()
         data = response.json()
@@ -77,7 +77,7 @@ def get_paradex_funding_rates():
                 symbol = market['symbol']
                 markets.append(symbol)
         
-        # Ottieni funding rates per ogni mercato
+        # Get funding rates for each market
         rates = {}
         for market in markets:
             try:
@@ -94,11 +94,11 @@ def get_paradex_funding_rates():
         
         return rates
     except Exception as e:
-        print(f"Errore Paradex: {e}")
+        print(f"Paradex Error: {e}")
         return {}
 
 def get_extended_funding_rates():
-    """Ottiene i funding rates da Extended Exchange"""
+    """Get funding rates from Extended Exchange"""
     try:
         EXTENDED_API = "https://api.extended.exchange/api/v1/"
         url = f"{EXTENDED_API}/info/markets"
@@ -110,7 +110,7 @@ def get_extended_funding_rates():
         for item in data['data']:
             try:
                 symbol = item['name']
-                # Rimuovi il suffisso -USD
+                # Remove -USD suffix
                 symbol = symbol.replace("-USD", "")
                 funding_rate = float(item['marketStats']['fundingRate'])
                 annualized_rate = funding_rate * 24 * 365 * 100
@@ -120,11 +120,11 @@ def get_extended_funding_rates():
         
         return rates
     except Exception as e:
-        print(f"Errore Extended: {e}")
+        print(f"Extended Error: {e}")
         return {}
 
 def fetch_all_funding_rates():
-    """Fetch funding rates da tutti i DEX"""
+    """Fetch funding rates from all DEXs"""
     print("Fetching funding rates...")
     
     # Fetch in parallelo usando threading
@@ -170,11 +170,11 @@ def update_funding_rates_background():
         except Exception as e:
             print(f"Background update error: {e}")
         
-        # Attendi 3 minuti prima del prossimo aggiornamento
+        # Wait 3 minutes before next update
         time.sleep(CACHE_DURATION)
 
 def start_background_updates():
-    """Avvia il thread di aggiornamento in background"""
+    """Start background update thread"""
     global background_thread
     
     if background_thread is None or not background_thread.is_alive():
@@ -183,10 +183,10 @@ def start_background_updates():
         print("Background updates thread started")
 
 def combine_funding_data(dex_data):
-    """Combina i dati di tutti i DEX in un formato uniforme"""
+    """Combine data from all DEXs in uniform format"""
     combined_data = []
     
-    # Ottieni tutti i mercati unici
+    # Get all unique markets
     all_markets = set()
     for dex_name, rates in dex_data.items():
         all_markets.update(rates.keys())
@@ -248,15 +248,15 @@ def get_funding_rates():
             last_update = time.time()
             print(f"Initial data loaded for {len(funding_cache)} markets")
             
-            # Avvia gli aggiornamenti in background
+            # Start background updates
             start_background_updates()
             app_initialized = True
             
         except Exception as e:
-            print(f"Errore nel caricamento iniziale: {e}")
+            print(f"Initial loading error: {e}")
             return jsonify({'error': 'Unable to fetch funding rates'}), 500
     
-    # Se non abbiamo ancora dati (possibile solo in caso di errore iniziale)
+    # If we don't have data yet (only possible in case of initial error)
     if not funding_cache:
         return jsonify({'error': 'No data available'}), 500
     

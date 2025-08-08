@@ -19,7 +19,7 @@ const Index = () => {
 
   // Update filtered data when funding data changes
   useEffect(() => {
-    // Filtra automaticamente i mercati con max spread 0.0 bps
+    // Automatically filter markets with max spread 0.0 bps
     const filtered = fundingData.filter(item => {
       const maxSpread = calculateMaxSpread(item.dexRates);
       return maxSpread.spread > 0;
@@ -30,7 +30,7 @@ const Index = () => {
   const handleFilterChange = (filters: typeof activeFilters) => {
     setActiveFilters(filters);
     
-    // Inizia sempre con i dati già filtrati per escludere spread 0.0
+    // Always start with data already filtered to exclude spread 0.0
     let filtered = fundingData.filter(item => {
       const maxSpread = calculateMaxSpread(item.dexRates);
       return maxSpread.spread > 0;
@@ -71,7 +71,7 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-slate-600">Caricamento funding rates...</p>
+          <p className="text-lg text-slate-600">Loading funding rates...</p>
         </div>
       </div>
     );
@@ -82,9 +82,9 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
         <div className="text-center bg-white rounded-xl shadow-lg p-8">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Errore nel caricamento</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Loading Error</h2>
           <p className="text-slate-600 mb-4">{error}</p>
-          <p className="text-slate-500 text-sm">I dati verranno aggiornati automaticamente ogni 3 minuti</p>
+          <p className="text-slate-500 text-sm">Data will be automatically updated every 3 minutes</p>
         </div>
       </div>
     );
@@ -100,15 +100,15 @@ const Index = () => {
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-slate-600 px-2">
             <span className="hidden sm:inline">
-              Trova le migliori opportunità di arbitraggio analizzando automaticamente i DEX con il maggior spread
+              Find the best arbitrage opportunities by automatically analyzing DEXs with the highest spread
             </span>
             <span className="sm:hidden">
-              Opportunità di arbitraggio sui DEX
+              Arbitrage opportunities on DEXs
             </span>
           </p>
           {lastUpdate && (
             <p className="text-xs sm:text-sm text-slate-500 mt-2 px-2">
-              Ultimo aggiornamento: {new Date(lastUpdate).toLocaleString('it-IT')}
+              Last update: {new Date(lastUpdate).toLocaleString('en-US')}
             </p>
           )}
         </div>
@@ -117,9 +117,9 @@ const Index = () => {
         
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold">Filtri</h2>
+            <h2 className="text-lg sm:text-xl font-semibold">Filters</h2>
             <div className="text-xs sm:text-sm text-slate-500 self-start sm:self-auto">
-              Aggiornamento automatico ogni 3 minuti
+              Automatic update every 3 minutes
             </div>
           </div>
           <FundingRatesFilters 

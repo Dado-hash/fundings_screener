@@ -46,10 +46,10 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
         <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            <span className="text-base sm:text-lg">Filtri Opportunità</span>
+            <span className="text-base sm:text-lg">Opportunity Filters</span>
             {getActiveFiltersCount() > 0 && (
               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                {getActiveFiltersCount()} attivi
+                {getActiveFiltersCount()} active
               </span>
             )}
           </div>
@@ -71,7 +71,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
             <Label htmlFor="arbitrage-opportunities" className="text-sm font-medium cursor-pointer flex-1">
               <div className="font-semibold text-slate-900">Best Arbitrage</div>
               <div className="text-xs text-slate-500 mt-1">
-                Opportunità con rates opposti e spread elevato
+                Opportunities with opposite rates and high spread
               </div>
             </Label>
           </div>
@@ -86,7 +86,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
             <Label htmlFor="high-spread" className="text-sm font-medium cursor-pointer flex-1">
               <div className="font-semibold text-slate-900">High Spread</div>
               <div className="text-xs text-slate-500 mt-1">
-                Spread massimo maggiore di 100 bps
+                Maximum spread greater than 100 bps
               </div>
             </Label>
           </div>
@@ -101,7 +101,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
             <Label htmlFor="low-spread" className="text-sm font-medium cursor-pointer flex-1">
               <div className="font-semibold text-slate-900">Low Spread</div>
               <div className="text-xs text-slate-500 mt-1">
-                Spread massimo minore di 100 bps
+                Maximum spread less than 100 bps
               </div>
             </Label>
           </div>
@@ -110,7 +110,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
         {/* Active Filters Summary - Mobile */}
         {getActiveFiltersCount() > 0 && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg sm:hidden">
-            <div className="text-sm font-medium text-blue-900 mb-2">Filtri Attivi:</div>
+            <div className="text-sm font-medium text-blue-900 mb-2">Active Filters:</div>
             <div className="flex flex-wrap gap-2">
               {filters.showArbitrageOpportunities && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

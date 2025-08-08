@@ -44,7 +44,7 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
         <CardContent>
           <div className="text-3xl font-bold text-blue-600 mb-1">{stats.arbitrageOpportunities}</div>
           <p className="text-sm text-slate-600">
-            Opportunità di arbitraggio
+            Arbitrage opportunities
           </p>
           <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
             <div 
@@ -65,7 +65,7 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
         <CardContent>
           <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.highSpreadOpportunities}</div>
           <p className="text-sm text-slate-600">
-            Spread elevati disponibili
+            High spreads available
           </p>
           <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
             <div 
@@ -89,7 +89,7 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
             <span className="text-lg font-normal text-slate-500 ml-1">bps</span>
           </div>
           <p className="text-sm text-slate-600">
-            Media spread massimi
+            Average max spreads
           </p>
           <div className="mt-2 flex items-center text-xs text-slate-500">
             <span className="mr-2">Range:</span>
