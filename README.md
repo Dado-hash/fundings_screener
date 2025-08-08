@@ -1,133 +1,133 @@
 # Funding Rates Screener
 
-Un'applicazione web completa per monitorare e analizzare i funding rates delle criptovalute su più DEX (Decentralized Exchanges) per identificare opportunità di arbitraggio.
+A comprehensive web application for monitoring and analyzing cryptocurrency funding rates across multiple DEXs (Decentralized Exchanges) to identify arbitrage opportunities.
 
-## 🎯 Caratteristiche
+## 🎯 Features
 
-- **Dati in tempo reale** da 4 DEX principali:
-  - **dYdX**: Funding rates per mercati perpetui
+- **Real-time data** from 4 major DEXs:
+  - **dYdX**: Funding rates for perpetual markets
   - **Hyperliquid**: Predicted funding rates
-  - **Paradex**: Funding rates per mercati PERP
-  - **Extended Exchange**: Funding rates per mercati perpetui
+  - **Paradex**: Funding rates for PERP markets
+  - **Extended Exchange**: Funding rates for perpetual markets
 
-- **Analisi automatica degli spread** per identificare:
-  - Opportunità di arbitraggio (spread > 100 bps)
-  - Spread elevati (spread 50-100 bps)
-  - Spread bassi (spread < 50 bps)
+- **Automatic spread analysis** to identify:
+  - Arbitrage opportunities (spread > 100 bps)
+  - High spreads (spread 50-100 bps)
+  - Low spreads (spread < 50 bps)
 
-- **Interfaccia utente moderna** con:
-  - Filtri avanzati per spread e tipologie
-  - Statistiche aggregate
-  - Aggiornamento automatico ogni 3 minuti
-  - Visualizzazione tabellare ordinabile
-  - Esclusione automatica mercati con spread 0.0 bps
+- **Modern user interface** with:
+  - Advanced filters for spreads and types
+  - Aggregate statistics
+  - Automatic updates every 3 minutes
+  - Sortable table view
+  - Automatic exclusion of markets with 0.0 bps spread
 
-## 🏗️ Architettura
+## 🏗️ Architecture
 
 ### Backend (Flask)
-- **API REST** per servire i dati di funding rates
-- **Aggiornamento automatico** in background ogni 3 minuti
-- **Fetch parallelo** dai 4 DEX per ridurre la latenza
-- **Gestione errori** robusta per API esterne
-- **Cache intelligente** con background thread per performance ottimali
-- **Deployment flessibile**: Locale (Flask) e cloud (Vercel)
+- **REST API** to serve funding rates data
+- **Automatic background updates** every 3 minutes
+- **Parallel fetching** from 4 DEXs to reduce latency
+- **Robust error handling** for external APIs
+- **Intelligent caching** with background thread for optimal performance
+- **Flexible deployment**: Local (Flask) and cloud (Vercel)
 
 ### Frontend (React + TypeScript)
-- **React 18** con Vite per build veloce
-- **TypeScript** per type safety
-- **TailwindCSS** per styling
-- **Hooks personalizzati** per gestione stato
-- **UI components** riutilizzabili con shadcn/ui
+- **React 18** with Vite for fast builds
+- **TypeScript** for type safety
+- **TailwindCSS** for styling
+- **Custom hooks** for state management
+- **Reusable UI components** with shadcn/ui
 
-## 🚀 Avvio Rapido
+## 🚀 Quick Start
 
-### Prerequisiti
+### Prerequisites
 - **Python 3.8+**
 - **Node.js 16+**
-- **npm** o **yarn**
+- **npm** or **yarn**
 
-### Installazione e Avvio
+### Installation and Setup
 
-1. **Clona il repository**:
+1. **Clone the repository**:
    ```bash
    git clone <repo-url>
    cd fundings_screener
    ```
 
-2. **Avvia l'applicazione** (script automatico):
+2. **Start the application** (automatic script):
    ```bash
    ./start.sh
    ```
 
-   Questo script:
-   - Crea un virtual environment Python
-   - Installa le dipendenze backend
-   - Installa le dipendenze frontend
-   - Avvia backend (porta 5000) e frontend (porta 5173)
+   This script:
+   - Creates a Python virtual environment
+   - Installs backend dependencies
+   - Installs frontend dependencies
+   - Starts backend (port 5000) and frontend (port 5173)
 
-3. **Accedi all'applicazione**:
+3. **Access the application**:
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:5000/api/funding-rates
 
-### Avvio Manuale
+### Manual Setup
 
-Se preferisci avviare manualmente:
+If you prefer to start manually:
 
 **Backend:**
 ```bash
-# Crea virtual environment
+# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Installa dipendenze
+# Install dependencies
 pip install -r backend/requirements.txt
 
-# Avvia server
+# Start server
 cd backend
 python app.py
 ```
 
 **Frontend:**
 ```bash
-# Installa dipendenze
+# Install dependencies
 cd frontend
 npm install
 
-# Avvia dev server
+# Start dev server
 npm run dev
 ```
 
-## 📊 Utilizzo
+## 📊 Usage
 
-### Interpretazione dei Dati
+### Data Interpretation
 
-- **Rate**: Funding rates annualizzati in percentuale
-- **Spread**: Differenza tra il rate più alto e più basso per lo stesso asset
-- **Opportunità**: 
-  - 🔴 **Arbitraggio** (spread > 100 bps): Opportunità ad alto potenziale
-  - 🟡 **High Spread** (50-100 bps): Opportunità moderate  
-  - 🟢 **Low Spread** (< 50 bps): Spread contenuti
+- **Rate**: Annualized funding rates in percentage
+- **Spread**: Difference between the highest and lowest rate for the same asset
+- **Opportunities**: 
+  - 🔴 **Arbitrage** (spread > 100 bps): High potential opportunities
+  - 🟡 **High Spread** (50-100 bps): Moderate opportunities  
+  - 🟢 **Low Spread** (< 50 bps): Contained spreads
 
-### Filtri Disponibili
+### Available Filters
 
-- **Filtro automatico**: Esclude automaticamente mercati con spread 0.0 bps
-- **Mostra solo opportunità di arbitraggio**: Filtra solo asset con spread > 100 bps
-- **Mostra spread elevati**: Asset con spread tra 50-100 bps
-- **Mostra spread bassi**: Asset con spread < 50 bps
-- **Range spread personalizzato**: Imposta min/max spread manualmente
+- **Automatic filter**: Automatically excludes markets with 0.0 bps spread
+- **Show only arbitrage opportunities**: Filters only assets with spread > 100 bps
+- **Show high spreads**: Assets with spread between 50-100 bps
+- **Show low spreads**: Assets with spread < 50 bps
+- **Custom spread range**: Set min/max spread manually
 
-### Sistema di Aggiornamento
+### Update System
 
-L'applicazione utilizza un **sistema completamente automatico**:
-- **Backend**: Thread in background aggiorna i dati ogni 3 minuti
-- **Frontend**: Controlla ogni 30 secondi per nuovi dati disponibili
-- **Nessun controllo manuale**: L'utente non può forzare aggiornamenti
-- **Zero attesa**: I dati sono sempre disponibili dalla cache
+The application uses a **fully automatic system**:
+- **Backend**: Background thread updates data every 3 minutes
+- **Frontend**: Checks every 30 seconds for new available data
+- **No manual controls**: Users cannot force updates
+- **Zero wait**: Data is always available from cache
 
 ## 🔧 API Endpoints
 
 ### GET /api/funding-rates
-Restituisce i funding rates di tutti i DEX.
+Returns funding rates from all DEXs.
 
 **Response:**
 ```json
@@ -151,84 +151,84 @@ Restituisce i funding rates di tutti i DEX.
 ```
 
 ### GET /api/health
-Health check del backend.
+Backend health check.
 
-## 🔄 Funzionalità Tecniche
+## 🔄 Technical Features
 
-### Caching e Performance
-- **Background threading**: Aggiornamento automatico ogni 3 minuti
-- **Fetch parallelo** da tutti i 4 DEX simultaneamente
-- **Polling frontend** ogni 30 secondi per nuovi dati
-- **Cache intelligente**: Dati sempre disponibili, zero attesa per l'utente
-- **Lazy loading** e ottimizzazioni React
+### Caching and Performance
+- **Background threading**: Automatic updates every 3 minutes
+- **Parallel fetching** from all 4 DEXs simultaneously
+- **Frontend polling** every 30 seconds for new data
+- **Intelligent cache**: Data always available, zero wait for users
+- **Lazy loading** and React optimizations
 
 ### Error Handling
-- Retry automatico su errori di rete
-- Fallback su dati cached in caso di errori
-- UI per gestione stati di errore
-- Logging dettagliato per debugging
+- Automatic retry on network errors
+- Fallback to cached data on errors
+- UI for error state management
+- Detailed logging for debugging
 
-### Sicurezza
-- CORS configurato per ambiente di sviluppo
-- Validazione input lato client e server
-- Timeout su chiamate API esterne
-- Sanitizzazione dati in ingresso
+### Security
+- CORS configured for development environment
+- Input validation on client and server side
+- Timeout on external API calls
+- Input data sanitization
 
-## 🛠️ Sviluppo
+## 🛠️ Development
 
-### Struttura del Progetto
+### Project Structure
 ```
 fundings_screener/
 ├── api/
-│   └── funding-rates.py    # API Vercel function
+│   └── funding-rates.py    # Vercel API function
 ├── backend/
-│   ├── app.py              # Server Flask principale
-│   └── requirements.txt    # Dipendenze Python
+│   ├── app.py              # Main Flask server
+│   └── requirements.txt    # Python dependencies
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # Componenti React
+│   │   ├── components/     # React components
 │   │   ├── hooks/         # Custom hooks
-│   │   ├── pages/         # Pagine dell'app
+│   │   ├── pages/         # App pages
 │   │   └── utils/         # Utility functions
-│   └── package.json       # Dipendenze Node.js
-├── test_*.py              # Script testing per ogni DEX
-├── start.sh               # Script di avvio automatico
-├── vercel.json            # Configurazione deployment Vercel
-├── CLAUDE.md              # Documentazione dettagliata per Claude
+│   └── package.json       # Node.js dependencies
+├── test_*.py              # Testing scripts for each DEX
+├── start.sh               # Automatic startup script
+├── vercel.json            # Vercel deployment config
+├── CLAUDE.md              # Detailed documentation for Claude
 └── README.md
 ```
 
-### Scripts Disponibili
+### Available Scripts
 
 **Frontend:**
-- `npm run dev`: Avvia dev server
-- `npm run build`: Build per produzione
-- `npm run preview`: Preview build di produzione
+- `npm run dev`: Start dev server
+- `npm run build`: Build for production
+- `npm run preview`: Preview production build
 
 **Backend:**
-- `python app.py`: Avvia server Flask
+- `python app.py`: Start Flask server
 
 ## 📈 Roadmap
 
-- [x] ✅ **Extended Exchange** integrato
-- [x] ✅ **Aggiornamento automatico** ogni 3 minuti
-- [x] ✅ **Deploy Vercel** configurato
-- [x] ✅ **Filtro spread 0.0** automatico
-- [ ] Aggiungere più DEX (GMX, Gains Network, ecc.)
-- [ ] Implementare WebSocket per dati real-time
-- [ ] Aggiungere grafici storici
-- [ ] Implementare alert personalizzabili
-- [ ] Aggiungere calcolo PnL per strategie
-- [ ] Dati volume e open interest reali
+- [x] ✅ **Extended Exchange** integrated
+- [x] ✅ **Automatic updates** every 3 minutes
+- [x] ✅ **Vercel deployment** configured
+- [x] ✅ **Automatic 0.0 spread filter**
+- [ ] Add more DEXs (GMX, Gains Network, etc.)
+- [ ] Implement WebSocket for real-time data
+- [ ] Add historical charts
+- [ ] Implement customizable alerts
+- [ ] Add PnL calculation for strategies
+- [ ] Real volume and open interest data
 
-## 🤝 Contribuire
+## 🤝 Contributing
 
-1. Fork del repository
-2. Crea un branch per la feature (`git checkout -b feature/AmazingFeature`)
-3. Commit delle modifiche (`git commit -m 'Add some AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Apri una Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📄 Licenza
+## 📄 License
 
-Questo progetto è sotto licenza MIT. Vedi il file `LICENSE` per dettagli.
+This project is under the MIT License. See the `LICENSE` file for details.
