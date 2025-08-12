@@ -8,7 +8,7 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
 const CACHE_KEY = 'funding_rates_cache';
 const CACHE_TIMESTAMP_KEY = 'funding_rates_cache_timestamp';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes - only for initial page load
-const REFRESH_INTERVAL = 30 * 1000; // 30 seconds - background refresh to get new data
+const REFRESH_INTERVAL = 60 * 1000; // 60 seconds - background refresh to get new data
 
 interface ApiResponse {
   data: FundingRateData[];

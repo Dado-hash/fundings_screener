@@ -58,7 +58,7 @@ export const getOpportunityType = (maxSpread: MaxSpreadResult): 'arbitrage' | 'h
   }
   
   // High spread opportunity: same sign but significant difference
-  if (spread > 100) {
+  if (spread >= 100) {
     return 'high-spread';
   }
   

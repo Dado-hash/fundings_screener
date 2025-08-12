@@ -224,7 +224,7 @@ describe('getOpportunityType', () => {
     expect(result).toBe('low-spread')
   })
 
-  it('should return "low-spread" for spread exactly at boundary (100)', () => {
+  it('should return "high-spread" for spread exactly at boundary (100)', () => {
     const maxSpread = {
       spread: 100.0,
       highDex: 'GMX',
@@ -235,7 +235,7 @@ describe('getOpportunityType', () => {
     
     const result = getOpportunityType(maxSpread)
     
-    expect(result).toBe('low-spread')
+    expect(result).toBe('high-spread')
   })
 
   it('should return "high-spread" for spread just above boundary (100.1)', () => {

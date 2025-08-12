@@ -86,7 +86,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
             <Label htmlFor="high-spread" className="text-sm font-medium cursor-pointer flex-1">
               <div className="font-semibold text-slate-900">High Spread</div>
               <div className="text-xs text-slate-500 mt-1">
-                Maximum spread greater than 100 bps
+                Maximum spread 100 bps or greater
               </div>
             </Label>
           </div>

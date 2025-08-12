@@ -46,7 +46,7 @@ const Index = () => {
     if (filters.showHighSpread) {
       filtered = filtered.filter(item => {
         const maxSpread = calculateMaxSpread(item.dexRates);
-        return getOpportunityType(maxSpread) === 'high-spread';
+        return maxSpread.spread >= 100;
       });
     }
     
