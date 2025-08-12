@@ -25,7 +25,6 @@ const Index = () => {
     return {
       showArbitrageOpportunities: false,
       showHighSpread: false,
-      showLowSpread: false,
       minSpread: 0,
       maxSpread: 500
     };
@@ -53,12 +52,6 @@ const Index = () => {
       });
     }
     
-    if (filters.showLowSpread) {
-      filtered = filtered.filter(item => {
-        const maxSpread = calculateMaxSpread(item.dexRates);
-        return getOpportunityType(maxSpread) === 'low-spread';
-      });
-    }
     
     // Filter by spread range
     filtered = filtered.filter(item => {

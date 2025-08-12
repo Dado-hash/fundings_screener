@@ -8,7 +8,6 @@ import { Filter, RotateCcw } from '@/lib/icons';
 interface FilterProps {
   showArbitrageOpportunities: boolean;
   showHighSpread: boolean;
-  showLowSpread: boolean;
   minSpread: number;
   maxSpread: number;
 }
@@ -30,7 +29,6 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
     onFilterChange({
       showArbitrageOpportunities: false,
       showHighSpread: false,
-      showLowSpread: false,
       minSpread: 0,
       maxSpread: 500
     });
@@ -105,11 +103,6 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
               {filters.showHighSpread && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                   Spread ≥100 bps
-                </span>
-              )}
-              {filters.showLowSpread && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  Spread &lt;100 bps
                 </span>
               )}
             </div>

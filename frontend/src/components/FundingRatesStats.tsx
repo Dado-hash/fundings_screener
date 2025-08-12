@@ -9,7 +9,6 @@ interface FundingRatesStatsProps {
   activeFilters: {
     showArbitrageOpportunities: boolean;
     showHighSpread: boolean;
-    showLowSpread: boolean;
     minSpread: number;
     maxSpread: number;
   };
@@ -79,11 +78,7 @@ export const FundingRatesStats = ({ data, activeFilters }: FundingRatesStatsProp
         </CardContent>
       </Card>
 
-      <Card className={`transition-all sm:col-span-2 lg:col-span-1 ${
-        activeFilters.showLowSpread 
-          ? 'shadow-md shadow-purple-100 ring-2 ring-purple-200 bg-purple-50/30' 
-          : 'hover:shadow-md'
-      }`}>
+      <Card className="hover:shadow-md transition-all sm:col-span-2 lg:col-span-1">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-medium text-slate-700">Avg Max Spread</CardTitle>
           <div className="p-2 bg-purple-100 rounded-full">
