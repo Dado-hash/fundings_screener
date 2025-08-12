@@ -1,7 +1,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown } from '@/lib/icons';
 import { FundingRateData } from '../data/mockFundingData';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
 

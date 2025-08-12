@@ -1,0 +1,1 @@
+"""Test package for funding rates screener."""

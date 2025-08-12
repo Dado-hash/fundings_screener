@@ -160,4 +160,12 @@ out/
 
 # Cache
 .cache/
+
 .claude/
+
+# Secrets and Environment Variables
+secrets/
+*.env
+*.env.*
+!.env.template
+!.env.example

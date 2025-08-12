@@ -1,9 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FundingRateData } from '../data/mockFundingData';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
   : 'http://localhost:5000/api';
+
+const CACHE_KEY = 'funding_rates_cache';
+const CACHE_TIMESTAMP_KEY = 'funding_rates_cache_timestamp';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes - only for initial page load
+const REFRESH_INTERVAL = 30 * 1000; // 30 seconds - background refresh to get new data
 
 interface ApiResponse {
   data: FundingRateData[];
@@ -11,15 +16,64 @@ interface ApiResponse {
   totalMarkets: number;
 }
 
+interface CacheData {
+  data: FundingRateData[];
+  lastUpdate: string;
+  timestamp: number;
+}
+
 export const useFundingRates = () => {
   const [data, setData] = useState<FundingRateData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const isFirstLoad = useRef(true);
 
-  const fetchFundingRates = async () => {
+  // Load data from localStorage cache
+  const loadFromCache = (): CacheData | null => {
     try {
-      setLoading(true);
+      const cachedData = localStorage.getItem(CACHE_KEY);
+      const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+      
+      if (cachedData && cachedTimestamp) {
+        const timestamp = parseInt(cachedTimestamp);
+        const now = Date.now();
+        
+        // Always return cached data for immediate display
+        const parsed: CacheData = JSON.parse(cachedData);
+        return { ...parsed, timestamp };
+      }
+    } catch (err) {
+      console.warn('Error loading from cache:', err);
+    }
+    return null;
+  };
+
+  // Save data to localStorage cache
+  const saveToCache = (data: FundingRateData[], lastUpdate: string) => {
+    try {
+      const cacheData: CacheData = {
+        data,
+        lastUpdate,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+    } catch (err) {
+      console.warn('Error saving to cache:', err);
+    }
+  };
+
+  const fetchFundingRates = async (isBackgroundUpdate = false) => {
+    try {
+      // Only show loading spinner on first load
+      if (isFirstLoad.current) {
+        setLoading(true);
+      } else if (!isBackgroundUpdate) {
+        setIsRefreshing(true);
+      }
+      
       setError(null);
       
       const response = await fetch(`${API_BASE_URL}/funding-rates`);
@@ -30,21 +84,47 @@ export const useFundingRates = () => {
       
       const result: ApiResponse = await response.json();
       
+      // Update state with fresh data
       setData(result.data);
       setLastUpdate(result.lastUpdate);
+      
+      // Cache the fresh data
+      saveToCache(result.data, result.lastUpdate);
+      
+      isFirstLoad.current = false;
     } catch (err) {
       console.error('Error fetching funding rates:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchFundingRates();
+    // First, try to load from cache for immediate display
+    const cachedData = loadFromCache();
+    if (cachedData) {
+      setData(cachedData.data);
+      setLastUpdate(cachedData.lastUpdate);
+      setLoading(false);
+      isFirstLoad.current = false;
+      
+      // Check if cache is stale (older than 5 minutes)
+      const isCacheStale = Date.now() - cachedData.timestamp > CACHE_DURATION;
+      if (isCacheStale) {
+        // Cache is stale, fetch fresh data in background
+        fetchFundingRates(true);
+      }
+    } else {
+      // No cache, fetch fresh data with loading state
+      fetchFundingRates();
+    }
     
-    // Check for updates every 30 seconds (il backend si aggiorna ogni 3 minuti)
-    const interval = setInterval(fetchFundingRates, 30 * 1000);
+    // Background updates every 30 seconds (backend updates every 3 minutes)
+    const interval = setInterval(() => {
+      fetchFundingRates(true); // Background update
+    }, REFRESH_INTERVAL);
     
     return () => clearInterval(interval);
   }, []);
@@ -52,6 +132,7 @@ export const useFundingRates = () => {
   return {
     data,
     loading,
+    isRefreshing,
     error,
     lastUpdate
   };

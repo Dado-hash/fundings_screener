@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, ArrowUpDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpDown } from '@/lib/icons';
 import { FundingRateData } from '../data/mockFundingData';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
 
