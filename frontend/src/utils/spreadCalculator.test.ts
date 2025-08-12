@@ -294,3 +294,71 @@ describe('getOpportunityType', () => {
     expect(result).toBe('low-spread')
   })
 })
+
+describe('calculateMaxSpread with selectedDexes', () => {
+  it('should filter by selected DEXes', () => {
+    const dexRates: DexFundingRate[] = [
+      { dex: 'dYdX', rate: 10.0 },
+      { dex: 'Hyperliquid', rate: 50.0 },
+      { dex: 'Paradex', rate: 80.0 },
+      { dex: 'Extended', rate: 20.0 }
+    ]
+    
+    // Only select dYdX and Paradex
+    const selectedDexes = ['dYdX', 'Paradex']
+    
+    const result = calculateMaxSpread(dexRates, selectedDexes)
+    
+    // Should calculate spread only between dYdX (10.0) and Paradex (80.0)
+    expect(result.spread).toBe(70.0) // 80.0 - 10.0
+    expect(result.highDex).toBe('Paradex')
+    expect(result.lowDex).toBe('dYdX')
+    expect(result.highRate).toBe(80.0)
+    expect(result.lowRate).toBe(10.0)
+  })
+
+  it('should return zero spread if less than 2 DEXes selected', () => {
+    const dexRates: DexFundingRate[] = [
+      { dex: 'dYdX', rate: 10.0 },
+      { dex: 'Hyperliquid', rate: 50.0 },
+      { dex: 'Paradex', rate: 80.0 }
+    ]
+    
+    // Only select one DEX
+    const selectedDexes = ['dYdX']
+    
+    const result = calculateMaxSpread(dexRates, selectedDexes)
+    
+    expect(result.spread).toBe(0)
+    expect(result.highDex).toBe('')
+    expect(result.lowDex).toBe('')
+  })
+
+  it('should work without selectedDexes parameter (backwards compatibility)', () => {
+    const dexRates: DexFundingRate[] = [
+      { dex: 'dYdX', rate: 10.0 },
+      { dex: 'Hyperliquid', rate: 50.0 }
+    ]
+    
+    const result = calculateMaxSpread(dexRates)
+    
+    expect(result.spread).toBe(40.0) // 50.0 - 10.0
+    expect(result.highDex).toBe('Hyperliquid')
+    expect(result.lowDex).toBe('dYdX')
+  })
+
+  it('should filter out non-existing DEXes gracefully', () => {
+    const dexRates: DexFundingRate[] = [
+      { dex: 'dYdX', rate: 10.0 },
+      { dex: 'Hyperliquid', rate: 50.0 }
+    ]
+    
+    // Select a DEX that doesn't exist in the data + one that does
+    const selectedDexes = ['dYdX', 'NonExistentDEX']
+    
+    const result = calculateMaxSpread(dexRates, selectedDexes)
+    
+    // Should return zero spread because only 1 matching DEX found
+    expect(result.spread).toBe(0)
+  })
+})

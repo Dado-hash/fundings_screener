@@ -9,6 +9,7 @@ interface FundingRatesStatsProps {
   activeFilters: {
     showArbitrageOpportunities: boolean;
     showHighSpread: boolean;
+    selectedDexes: string[];
     minSpread: number;
     maxSpread: number;
   };
@@ -17,7 +18,8 @@ interface FundingRatesStatsProps {
 export const FundingRatesStats = ({ data, activeFilters }: FundingRatesStatsProps) => {
   const getStats = () => {
     const opportunities = data.map(item => {
-      const maxSpread = calculateMaxSpread(item.dexRates);
+      const selectedDexes = activeFilters.selectedDexes || ['dYdX', 'Hyperliquid', 'Paradex', 'Extended'];
+      const maxSpread = calculateMaxSpread(item.dexRates, selectedDexes);
       return {
         ...item,
         maxSpread,

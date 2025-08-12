@@ -7,9 +7,10 @@ import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculato
 
 interface FundingRatesTableProps {
   data: FundingRateData[];
+  selectedDexes: string[];
 }
 
-export const FundingRatesTable = ({ data }: FundingRatesTableProps) => {
+export const FundingRatesTable = ({ data, selectedDexes }: FundingRatesTableProps) => {
   const formatRate = (rate: number) => {
     return `${rate > 0 ? '+' : ''}${rate.toFixed(1)}`;
   };
@@ -49,7 +50,7 @@ export const FundingRatesTable = ({ data }: FundingRatesTableProps) => {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-4 font-semibold">Market</th>
-                <th className="text-center p-4 font-semibold">All DEXs</th>
+                <th className="text-center p-4 font-semibold">Selected DEXs</th>
                 <th className="text-center p-4 font-semibold">Max Spread</th>
                 <th className="text-center p-4 font-semibold">Best Pair</th>
                 <th className="text-center p-4 font-semibold">Opportunity</th>
@@ -57,7 +58,9 @@ export const FundingRatesTable = ({ data }: FundingRatesTableProps) => {
             </thead>
             <tbody>
               {data.map((item, index) => {
-                const maxSpread = calculateMaxSpread(item.dexRates);
+                const safeDexes = selectedDexes || ['dYdX', 'Hyperliquid', 'Paradex', 'Extended'];
+                const maxSpread = calculateMaxSpread(item.dexRates, safeDexes);
+                const filteredDexRates = item.dexRates.filter(rate => safeDexes.includes(rate.dex));
                 return (
                   <tr key={index} className="border-b hover:bg-slate-50 transition-colors">
                     <td className="p-4">
@@ -67,7 +70,7 @@ export const FundingRatesTable = ({ data }: FundingRatesTableProps) => {
                     </td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1 justify-center">
-                        {item.dexRates.map((dexRate, dexIndex) => {
+                        {filteredDexRates.map((dexRate, dexIndex) => {
                           const isMaxSpreadDex = dexRate.dex === maxSpread.highDex || dexRate.dex === maxSpread.lowDex;
                           return (
                             <div
@@ -116,7 +119,9 @@ export const FundingRatesTable = ({ data }: FundingRatesTableProps) => {
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-4">
           {data.map((item, index) => {
-            const maxSpread = calculateMaxSpread(item.dexRates);
+            const safeDexes = selectedDexes || ['dYdX', 'Hyperliquid', 'Paradex', 'Extended'];
+            const maxSpread = calculateMaxSpread(item.dexRates, safeDexes);
+            const filteredDexRates = item.dexRates.filter(rate => safeDexes.includes(rate.dex));
             return (
               <Card key={index} className="border-2 hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
@@ -148,11 +153,13 @@ export const FundingRatesTable = ({ data }: FundingRatesTableProps) => {
                     </div>
                   </div>
 
-                  {/* All DEX Rates */}
+                  {/* Selected DEX Rates */}
                   <div>
-                    <div className="text-sm font-medium text-slate-700 mb-2">All DEX Rates:</div>
+                    <div className="text-sm font-medium text-slate-700 mb-2">
+                      Selected DEXs ({filteredDexRates.length}):
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
-                      {item.dexRates.map((dexRate, dexIndex) => {
+                      {filteredDexRates.map((dexRate, dexIndex) => {
                         const isMaxSpreadDex = dexRate.dex === maxSpread.highDex || dexRate.dex === maxSpread.lowDex;
                         return (
                           <div

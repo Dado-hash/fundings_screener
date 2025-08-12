@@ -5,8 +5,9 @@ import { FundingRatesFilters } from '../components/FundingRatesFilters';
 import { FundingRatesStats } from '../components/FundingRatesStats';
 import { useFundingRates } from '../hooks/useFundingRates';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
+import { AVAILABLE_DEXES } from '../components/FundingRatesFilters';
 
-const FILTERS_STORAGE_KEY = 'funding_rates_filters';
+const FILTERS_STORAGE_KEY = 'funding_rates_filters_v2'; // Changed key to force reset of old data
 
 const Index = () => {
   const { data: fundingData, loading, isRefreshing, error, lastUpdate } = useFundingRates();
@@ -17,7 +18,17 @@ const Index = () => {
     const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
     if (savedFilters) {
       try {
-        return JSON.parse(savedFilters);
+        const parsed = JSON.parse(savedFilters);
+        // Migration: add selectedDexes if missing from old saved data
+        return {
+          showArbitrageOpportunities: false,
+          showHighSpread: false,
+          selectedDexes: [...AVAILABLE_DEXES],
+          minSpread: 0,
+          maxSpread: 500,
+          ...parsed, // Override with saved values
+          selectedDexes: parsed.selectedDexes || [...AVAILABLE_DEXES], // Ensure selectedDexes exists
+        };
       } catch (error) {
         console.warn('Error parsing saved filters:', error);
       }
@@ -25,6 +36,7 @@ const Index = () => {
     return {
       showArbitrageOpportunities: false,
       showHighSpread: false,
+      selectedDexes: [...AVAILABLE_DEXES],
       minSpread: 0,
       maxSpread: 500
     };
@@ -32,22 +44,24 @@ const Index = () => {
 
   // Helper function to apply filters
   const applyFilters = (data: typeof fundingData, filters: typeof activeFilters) => {
+    const safeDexes = filters.selectedDexes || [...AVAILABLE_DEXES];
+    
     // Always start with data already filtered to exclude spread 0.0
     let filtered = data.filter(item => {
-      const maxSpread = calculateMaxSpread(item.dexRates);
+      const maxSpread = calculateMaxSpread(item.dexRates, safeDexes);
       return maxSpread.spread > 0;
     });
     
     if (filters.showArbitrageOpportunities) {
       filtered = filtered.filter(item => {
-        const maxSpread = calculateMaxSpread(item.dexRates);
+        const maxSpread = calculateMaxSpread(item.dexRates, safeDexes);
         return getOpportunityType(maxSpread) === 'arbitrage';
       });
     }
     
     if (filters.showHighSpread) {
       filtered = filtered.filter(item => {
-        const maxSpread = calculateMaxSpread(item.dexRates);
+        const maxSpread = calculateMaxSpread(item.dexRates, safeDexes);
         return maxSpread.spread >= 100;
       });
     }
@@ -55,7 +69,7 @@ const Index = () => {
     
     // Filter by spread range
     filtered = filtered.filter(item => {
-      const maxSpread = calculateMaxSpread(item.dexRates);
+      const maxSpread = calculateMaxSpread(item.dexRates, safeDexes);
       return maxSpread.spread >= filters.minSpread && maxSpread.spread <= filters.maxSpread;
     });
     
@@ -216,7 +230,7 @@ const Index = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <FundingRatesTable data={filteredData} />
+          <FundingRatesTable data={filteredData} selectedDexes={activeFilters.selectedDexes} />
         </div>
       </div>
     </div>

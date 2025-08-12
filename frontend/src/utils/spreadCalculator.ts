@@ -1,8 +1,13 @@
 
 import { DexFundingRate, MaxSpreadResult } from '../data/mockFundingData';
 
-export const calculateMaxSpread = (dexRates: DexFundingRate[]): MaxSpreadResult => {
-  if (dexRates.length < 2) {
+export const calculateMaxSpread = (dexRates: DexFundingRate[], selectedDexes?: string[]): MaxSpreadResult => {
+  // Filter rates by selected DEXes if provided
+  const filteredRates = selectedDexes && selectedDexes.length > 0 
+    ? dexRates.filter(rate => selectedDexes.includes(rate.dex))
+    : dexRates;
+
+  if (filteredRates.length < 2) {
     return {
       spread: 0,
       highDex: '',
@@ -19,22 +24,22 @@ export const calculateMaxSpread = (dexRates: DexFundingRate[]): MaxSpreadResult 
   let lowRate = 0;
 
   // Compare all pairs to find the maximum spread
-  for (let i = 0; i < dexRates.length; i++) {
-    for (let j = i + 1; j < dexRates.length; j++) {
-      const spread = Math.abs(dexRates[i].rate - dexRates[j].rate);
+  for (let i = 0; i < filteredRates.length; i++) {
+    for (let j = i + 1; j < filteredRates.length; j++) {
+      const spread = Math.abs(filteredRates[i].rate - filteredRates[j].rate);
       
       if (spread > maxSpread) {
         maxSpread = spread;
-        if (dexRates[i].rate > dexRates[j].rate) {
-          highDex = dexRates[i].dex;
-          highRate = dexRates[i].rate;
-          lowDex = dexRates[j].dex;
-          lowRate = dexRates[j].rate;
+        if (filteredRates[i].rate > filteredRates[j].rate) {
+          highDex = filteredRates[i].dex;
+          highRate = filteredRates[i].rate;
+          lowDex = filteredRates[j].dex;
+          lowRate = filteredRates[j].rate;
         } else {
-          highDex = dexRates[j].dex;
-          highRate = dexRates[j].rate;
-          lowDex = dexRates[i].dex;
-          lowRate = dexRates[i].rate;
+          highDex = filteredRates[j].dex;
+          highRate = filteredRates[j].rate;
+          lowDex = filteredRates[i].dex;
+          lowRate = filteredRates[i].rate;
         }
       }
     }
