@@ -14,8 +14,11 @@ dist/
 downloads/
 eggs/
 .eggs/
+# Python build directories
 lib/
 lib64/
+# Allow frontend lib directory for React components
+!frontend/src/lib/
 parts/
 sdist/
 var/
