@@ -6,9 +6,16 @@ import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculato
 
 interface FundingRatesStatsProps {
   data: FundingRateData[];
+  activeFilters: {
+    showArbitrageOpportunities: boolean;
+    showHighSpread: boolean;
+    showLowSpread: boolean;
+    minSpread: number;
+    maxSpread: number;
+  };
 }
 
-export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
+export const FundingRatesStats = ({ data, activeFilters }: FundingRatesStatsProps) => {
   const getStats = () => {
     const opportunities = data.map(item => {
       const maxSpread = calculateMaxSpread(item.dexRates);
@@ -20,7 +27,7 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
     });
 
     const arbitrageOpportunities = opportunities.filter(item => item.opportunityType === 'arbitrage').length;
-    const highSpreadOpportunities = opportunities.filter(item => item.opportunityType === 'high-spread').length;
+    const highSpreadOpportunities = opportunities.filter(item => item.maxSpread.spread >= 100).length;
     const avgMaxSpread = opportunities.reduce((sum, item) => sum + item.maxSpread.spread, 0) / opportunities.length;
 
     return {
@@ -34,7 +41,11 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className={`transition-all ${
+        activeFilters.showArbitrageOpportunities 
+          ? 'shadow-md shadow-blue-100 ring-2 ring-blue-200 bg-blue-50/30' 
+          : 'hover:shadow-md'
+      }`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-medium text-slate-700">Best Arbitrage</CardTitle>
           <div className="p-2 bg-blue-100 rounded-full">
@@ -46,37 +57,33 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
           <p className="text-sm text-slate-600">
             Arbitrage opportunities
           </p>
-          <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${Math.min((stats.arbitrageOpportunities / data.length) * 100, 100)}%` }}
-            ></div>
-          </div>
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className={`transition-all ${
+        activeFilters.showHighSpread 
+          ? 'shadow-md shadow-orange-100 ring-2 ring-orange-200 bg-orange-50/30' 
+          : 'hover:shadow-md'
+      }`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-medium text-slate-700">High Spread</CardTitle>
-          <div className="p-2 bg-yellow-100 rounded-full">
-            <TrendingUp className="h-4 w-4 text-yellow-600" />
+          <CardTitle className="text-sm font-medium text-slate-700">Spread ≥100 bps</CardTitle>
+          <div className="p-2 bg-orange-100 rounded-full">
+            <TrendingUp className="h-4 w-4 text-orange-600" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.highSpreadOpportunities}</div>
+          <div className="text-3xl font-bold text-orange-600 mb-1">{stats.highSpreadOpportunities}</div>
           <p className="text-sm text-slate-600">
-            High spreads available
+            Markets with spread ≥100 bps
           </p>
-          <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
-            <div 
-              className="bg-yellow-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${Math.min((stats.highSpreadOpportunities / data.length) * 100, 100)}%` }}
-            ></div>
-          </div>
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+      <Card className={`transition-all sm:col-span-2 lg:col-span-1 ${
+        activeFilters.showLowSpread 
+          ? 'shadow-md shadow-purple-100 ring-2 ring-purple-200 bg-purple-50/30' 
+          : 'hover:shadow-md'
+      }`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-medium text-slate-700">Avg Max Spread</CardTitle>
           <div className="p-2 bg-purple-100 rounded-full">
@@ -91,15 +98,6 @@ export const FundingRatesStats = ({ data }: FundingRatesStatsProps) => {
           <p className="text-sm text-slate-600">
             Average max spreads
           </p>
-          <div className="mt-2 flex items-center text-xs text-slate-500">
-            <span className="mr-2">Range:</span>
-            <div className="flex-1 bg-slate-200 rounded-full h-1.5">
-              <div 
-                className="bg-purple-600 h-1.5 rounded-full" 
-                style={{ width: `${Math.min((stats.avgMaxSpread / 500) * 100, 100)}%` }}
-              ></div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

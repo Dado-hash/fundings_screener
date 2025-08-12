@@ -37,7 +37,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
   };
 
   const getActiveFiltersCount = () => {
-    return [filters.showArbitrageOpportunities, filters.showHighSpread, filters.showLowSpread].filter(Boolean).length;
+    return [filters.showArbitrageOpportunities, filters.showHighSpread].filter(Boolean).length;
   };
 
   return (
@@ -60,7 +60,7 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
             <Switch
               id="arbitrage-opportunities"
@@ -84,24 +84,9 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
               className="mt-1"
             />
             <Label htmlFor="high-spread" className="text-sm font-medium cursor-pointer flex-1">
-              <div className="font-semibold text-slate-900">High Spread</div>
+              <div className="font-semibold text-slate-900">Spread ≥100 bps</div>
               <div className="text-xs text-slate-500 mt-1">
                 Maximum spread 100 bps or greater
-              </div>
-            </Label>
-          </div>
-
-          <div className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors sm:col-span-2 lg:col-span-1">
-            <Switch
-              id="low-spread"
-              checked={filters.showLowSpread}
-              onCheckedChange={() => handleFilterToggle('showLowSpread')}
-              className="mt-1"
-            />
-            <Label htmlFor="low-spread" className="text-sm font-medium cursor-pointer flex-1">
-              <div className="font-semibold text-slate-900">Low Spread</div>
-              <div className="text-xs text-slate-500 mt-1">
-                Maximum spread less than 100 bps
               </div>
             </Label>
           </div>
@@ -119,12 +104,12 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
               )}
               {filters.showHighSpread && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  High Spread
+                  Spread ≥100 bps
                 </span>
               )}
               {filters.showLowSpread && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  Low Spread
+                  Spread &lt;100 bps
                 </span>
               )}
             </div>

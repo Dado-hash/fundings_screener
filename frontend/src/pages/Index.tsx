@@ -199,7 +199,7 @@ const Index = () => {
           )}
         </div>
 
-        <FundingRatesStats data={filteredData} />
+        <FundingRatesStats data={fundingData} activeFilters={activeFilters} />
         
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
