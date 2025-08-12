@@ -110,12 +110,9 @@ export const useFundingRates = () => {
       setLoading(false);
       isFirstLoad.current = false;
       
-      // Check if cache is stale (older than 5 minutes)
-      const isCacheStale = Date.now() - cachedData.timestamp > CACHE_DURATION;
-      if (isCacheStale) {
-        // Cache is stale, fetch fresh data in background
-        fetchFundingRates(true);
-      }
+      // Always fetch fresh data in background, regardless of cache age
+      // The cache is just for immediate display
+      fetchFundingRates(true);
     } else {
       // No cache, fetch fresh data with loading state
       fetchFundingRates();

@@ -179,9 +179,6 @@ const Index = () => {
                   <span className="text-blue-600 text-xs font-medium">(updating...)</span>
                 )}
               </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Updates every 3 minutes • Background refresh every 30s
-              </p>
             </div>
           )}
         </div>
