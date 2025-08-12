@@ -6,32 +6,35 @@ import { FundingRatesStats } from '../components/FundingRatesStats';
 import { useFundingRates } from '../hooks/useFundingRates';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
 
+const FILTERS_STORAGE_KEY = 'funding_rates_filters';
+
 const Index = () => {
   const { data: fundingData, loading, isRefreshing, error, lastUpdate } = useFundingRates();
   const [filteredData, setFilteredData] = useState(fundingData);
-  const [activeFilters, setActiveFilters] = useState({
-    showArbitrageOpportunities: false,
-    showHighSpread: false,
-    showLowSpread: false,
-    minSpread: 0,
-    maxSpread: 500
+  
+  // Initialize filters from localStorage or defaults
+  const [activeFilters, setActiveFilters] = useState(() => {
+    const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (savedFilters) {
+      try {
+        return JSON.parse(savedFilters);
+      } catch (error) {
+        console.warn('Error parsing saved filters:', error);
+      }
+    }
+    return {
+      showArbitrageOpportunities: false,
+      showHighSpread: false,
+      showLowSpread: false,
+      minSpread: 0,
+      maxSpread: 500
+    };
   });
 
-  // Update filtered data when funding data changes
-  useEffect(() => {
-    // Automatically filter markets with max spread 0.0 bps
-    const filtered = fundingData.filter(item => {
-      const maxSpread = calculateMaxSpread(item.dexRates);
-      return maxSpread.spread > 0;
-    });
-    setFilteredData(filtered);
-  }, [fundingData]);
-
-  const handleFilterChange = (filters: typeof activeFilters) => {
-    setActiveFilters(filters);
-    
+  // Helper function to apply filters
+  const applyFilters = (data: typeof fundingData, filters: typeof activeFilters) => {
     // Always start with data already filtered to exclude spread 0.0
-    let filtered = fundingData.filter(item => {
+    let filtered = data.filter(item => {
       const maxSpread = calculateMaxSpread(item.dexRates);
       return maxSpread.spread > 0;
     });
@@ -63,7 +66,20 @@ const Index = () => {
       return maxSpread.spread >= filters.minSpread && maxSpread.spread <= filters.maxSpread;
     });
     
+    return filtered;
+  };
+
+  // Update filtered data when funding data changes, preserving active filters
+  useEffect(() => {
+    const filtered = applyFilters(fundingData, activeFilters);
     setFilteredData(filtered);
+  }, [fundingData, activeFilters]);
+
+  const handleFilterChange = (filters: typeof activeFilters) => {
+    setActiveFilters(filters);
+    // Save filters to localStorage
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    // The useEffect above will automatically update the filtered data
   };
 
   if (loading && fundingData.length === 0) {
