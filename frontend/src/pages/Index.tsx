@@ -192,7 +192,7 @@ const Index = () => {
               {isRefreshing && (
                 <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
               )}
-              Automatic update every 3 minutes
+              Automatic update every 10 minutes
               {lastUpdate && (
                 <span className="text-slate-400">
                   • Last: {new Date(lastUpdate).toLocaleTimeString('it-IT')}
