@@ -338,6 +338,13 @@ Type 1 or 2:
             'max_results': 5
         }
         
+        # Ensure subscription exists before creating alert
+        await self.db.create_subscription(
+            chat_id=update.effective_chat.id,
+            user_id=update.effective_user.id if update.effective_user else None,
+            username=update.effective_user.username if update.effective_user else None
+        )
+        
         # Save to database
         setting_id = await self.db.create_notification_setting(setting_data)
         

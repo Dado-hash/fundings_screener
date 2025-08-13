@@ -217,10 +217,17 @@ def format_notification_message(opportunities: List[Dict[str, Any]], filters: Di
     
     # Footer
     current_time = datetime.now().strftime("%H:%M")
-    next_check_hours = filters.get('interval_hours', 5)
+    
+    # Handle both minutes and hours intervals
+    if filters.get('interval_minutes'):
+        next_check_time = filters['interval_minutes']
+        time_unit = f"minute{'s' if next_check_time != 1 else ''}"
+    else:
+        next_check_time = filters.get('interval_hours', 5)
+        time_unit = f"hour{'s' if next_check_time != 1 else ''}"
     
     message += f"⏰ Updated: {current_time}\n"
-    message += f"🔄 Next check in {next_check_hours} hour{'s' if next_check_hours != 1 else ''}\n\n"
+    message += f"🔄 Next check in {next_check_time} {time_unit}\n\n"
     message += "📱 Manage alerts: /alerts"
     
     return message
