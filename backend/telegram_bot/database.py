@@ -93,7 +93,8 @@ class DatabaseManager:
                 id SERIAL PRIMARY KEY,
                 chat_id BIGINT REFERENCES telegram_subscriptions(chat_id),
                 name VARCHAR(255) NOT NULL,
-                interval_hours INTEGER NOT NULL,
+                interval_hours INTEGER,
+                interval_minutes INTEGER,
                 min_spread DECIMAL(5,2) DEFAULT 0,
                 max_spread DECIMAL(5,2) DEFAULT 500,
                 selected_dexes TEXT[],
@@ -102,7 +103,11 @@ class DatabaseManager:
                 max_results INTEGER DEFAULT 5,
                 is_active BOOLEAN DEFAULT TRUE,
                 last_sent TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT check_interval CHECK (
+                    (interval_hours IS NOT NULL AND interval_minutes IS NULL) OR
+                    (interval_hours IS NULL AND interval_minutes IS NOT NULL)
+                )
             );
             
             CREATE TABLE IF NOT EXISTS notification_log (
@@ -130,7 +135,8 @@ class DatabaseManager:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id INTEGER REFERENCES telegram_subscriptions(chat_id),
                 name TEXT NOT NULL,
-                interval_hours INTEGER NOT NULL,
+                interval_hours INTEGER,
+                interval_minutes INTEGER,
                 min_spread REAL DEFAULT 0,
                 max_spread REAL DEFAULT 500,
                 selected_dexes TEXT,
@@ -139,7 +145,11 @@ class DatabaseManager:
                 max_results INTEGER DEFAULT 5,
                 is_active BOOLEAN DEFAULT 1,
                 last_sent TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CHECK (
+                    (interval_hours IS NOT NULL AND interval_minutes IS NULL) OR
+                    (interval_hours IS NULL AND interval_minutes IS NOT NULL)
+                )
             );
             
             CREATE TABLE IF NOT EXISTS notification_log (
@@ -202,24 +212,25 @@ class DatabaseManager:
                 selected_dexes = setting_data['selected_dexes']
                 query = """
                 INSERT INTO notification_settings 
-                (chat_id, name, interval_hours, min_spread, max_spread, selected_dexes, 
+                (chat_id, name, interval_hours, interval_minutes, min_spread, max_spread, selected_dexes, 
                  show_arbitrage_only, show_high_spread_only, max_results)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """
             else:
                 selected_dexes = json.dumps(setting_data['selected_dexes'])
                 query = """
                 INSERT INTO notification_settings 
-                (chat_id, name, interval_hours, min_spread, max_spread, selected_dexes, 
+                (chat_id, name, interval_hours, interval_minutes, min_spread, max_spread, selected_dexes, 
                  show_arbitrage_only, show_high_spread_only, max_results)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
             
             cursor.execute(query, (
                 setting_data['chat_id'],
                 setting_data['name'],
-                setting_data['interval_hours'],
+                setting_data.get('interval_hours'),
+                setting_data.get('interval_minutes'),
                 setting_data['min_spread'],
                 setting_data['max_spread'],
                 selected_dexes,
@@ -251,14 +262,14 @@ class DatabaseManager:
             cursor = self.connection.cursor()
             
             query = """
-            SELECT id, name, interval_hours, min_spread, max_spread, selected_dexes,
+            SELECT id, name, interval_hours, interval_minutes, min_spread, max_spread, selected_dexes,
                    show_arbitrage_only, show_high_spread_only, max_results, 
                    last_sent, created_at, is_active
             FROM notification_settings
             WHERE chat_id = %s AND is_active = %s
             ORDER BY created_at DESC
             """ if self.is_postgres else """
-            SELECT id, name, interval_hours, min_spread, max_spread, selected_dexes,
+            SELECT id, name, interval_hours, interval_minutes, min_spread, max_spread, selected_dexes,
                    show_arbitrage_only, show_high_spread_only, max_results, 
                    last_sent, created_at, is_active
             FROM notification_settings
@@ -318,25 +329,28 @@ class DatabaseManager:
         try:
             cursor = self.connection.cursor()
             
-            # Get settings where last_sent is null or older than interval_hours
-            query = """
-            SELECT ns.*, ts.chat_id as subscription_chat_id
-            FROM notification_settings ns
-            JOIN telegram_subscriptions ts ON ns.chat_id = ts.chat_id
-            WHERE ns.is_active = %s AND ts.is_active = %s
-            AND (ns.last_sent IS NULL OR ns.last_sent <= %s)
-            """ if self.is_postgres else """
-            SELECT ns.*, ts.chat_id as subscription_chat_id
-            FROM notification_settings ns
-            JOIN telegram_subscriptions ts ON ns.chat_id = ts.chat_id
-            WHERE ns.is_active = 1 AND ts.is_active = 1
-            AND (ns.last_sent IS NULL OR datetime(ns.last_sent) <= datetime('now', '-' || ns.interval_hours || ' hours'))
-            """
-            
+            # Get settings where last_sent is null or older than the specified interval
             if self.is_postgres:
-                cutoff_time = datetime.now() - timedelta(hours=24)  # Check last 24h for safety
-                cursor.execute(query, (True, True, cutoff_time))
+                query = """
+                SELECT ns.*, ts.chat_id as subscription_chat_id
+                FROM notification_settings ns
+                JOIN telegram_subscriptions ts ON ns.chat_id = ts.chat_id
+                WHERE ns.is_active = %s AND ts.is_active = %s
+                AND (ns.last_sent IS NULL OR 
+                     (ns.interval_hours IS NOT NULL AND ns.last_sent <= NOW() - INTERVAL '1 hour' * ns.interval_hours) OR
+                     (ns.interval_minutes IS NOT NULL AND ns.last_sent <= NOW() - INTERVAL '1 minute' * ns.interval_minutes))
+                """
+                cursor.execute(query, (True, True))
             else:
+                query = """
+                SELECT ns.*, ts.chat_id as subscription_chat_id
+                FROM notification_settings ns
+                JOIN telegram_subscriptions ts ON ns.chat_id = ts.chat_id
+                WHERE ns.is_active = 1 AND ts.is_active = 1
+                AND (ns.last_sent IS NULL OR 
+                     (ns.interval_hours IS NOT NULL AND datetime(ns.last_sent) <= datetime('now', '-' || ns.interval_hours || ' hours')) OR
+                     (ns.interval_minutes IS NOT NULL AND datetime(ns.last_sent) <= datetime('now', '-' || ns.interval_minutes || ' minutes')))
+                """
                 cursor.execute(query)
             
             notifications = []

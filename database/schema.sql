@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     id SERIAL PRIMARY KEY,
     chat_id BIGINT REFERENCES telegram_subscriptions(chat_id),
     name VARCHAR(255) NOT NULL,
-    interval_hours INTEGER NOT NULL CHECK (interval_hours >= 1 AND interval_hours <= 24),
+    interval_hours INTEGER CHECK (interval_hours >= 1 AND interval_hours <= 24),
+    interval_minutes INTEGER CHECK (interval_minutes >= 5 AND interval_minutes <= 60),
     min_spread DECIMAL(5,2) DEFAULT 0 CHECK (min_spread >= 0),
     max_spread DECIMAL(5,2) DEFAULT 500 CHECK (max_spread >= min_spread),
     selected_dexes TEXT[], -- PostgreSQL array, JSON string for SQLite
@@ -25,7 +26,11 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     max_results INTEGER DEFAULT 5 CHECK (max_results > 0 AND max_results <= 10),
     is_active BOOLEAN DEFAULT TRUE,
     last_sent TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_interval CHECK (
+        (interval_hours IS NOT NULL AND interval_minutes IS NULL) OR
+        (interval_hours IS NULL AND interval_minutes IS NOT NULL)
+    )
 );
 
 -- Notification log table for tracking sent messages

@@ -38,17 +38,17 @@ class NotificationScheduler:
     def start(self):
         """Start the notification scheduler"""
         try:
-            # Schedule notification checks every 30 minutes
+            # Schedule notification checks every minute to handle minute-based intervals
             self.scheduler.add_job(
                 self.check_and_send_notifications,
-                CronTrigger(minute='*/30'),  # Every 30 minutes
+                CronTrigger(second=0),  # Every minute at 0 seconds
                 id='funding_notifications',
                 max_instances=1,  # Prevent overlapping runs
                 coalesce=True     # Combine missed runs
             )
             
             self.scheduler.start()
-            logger.info("Notification scheduler started - checking every 30 minutes")
+            logger.info("Notification scheduler started - checking every minute")
             
         except Exception as e:
             logger.error(f"Error starting notification scheduler: {e}")
@@ -108,13 +108,20 @@ class NotificationScheduler:
             
             logger.info(f"Processing notification for chat_id: {chat_id}, setting_id: {setting_id}")
             
-            # Check if notification is actually due based on interval
+            # Check if notification is actually due based on interval (hours or minutes)
             if notification['last_sent']:
                 last_sent = notification['last_sent']
                 if isinstance(last_sent, str):
                     last_sent = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
                 
-                next_due = last_sent + timedelta(hours=notification['interval_hours'])
+                # Calculate next due time based on whether it's hours or minutes
+                if notification.get('interval_hours'):
+                    next_due = last_sent + timedelta(hours=notification['interval_hours'])
+                elif notification.get('interval_minutes'):
+                    next_due = last_sent + timedelta(minutes=notification['interval_minutes'])
+                else:
+                    # Fallback to hours if neither is set (shouldn't happen with proper constraints)
+                    next_due = last_sent + timedelta(hours=1)
                 
                 if datetime.now() < next_due:
                     logger.info(f"Notification {setting_id} not yet due - next due at {next_due}")

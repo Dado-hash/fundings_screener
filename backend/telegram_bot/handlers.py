@@ -133,13 +133,25 @@ Type your alert name:
 
 *Step 2/5:* How often should I check for opportunities?
 
-Enter the number of hours between checks (1-24):
-• 1 = Every hour (very frequent)
+Choose your notification frequency:
+
+⚡ *High Frequency (minutes):*
+• 5 = Every 5 minutes (very frequent, for active trading)
+• 15 = Every 15 minutes (frequent updates)
+• 30 = Every 30 minutes (regular monitoring)
+
+⏰ *Standard Frequency (hours):*
+• 1 = Every hour
 • 5 = Every 5 hours (recommended)
 • 12 = Twice a day
 • 24 = Once a day
 
-Type a number between 1 and 24:
+Enter either:
+- A number with 'm' for minutes (e.g., "5m" for 5 minutes)
+- A number with 'h' for hours (e.g., "5h" for 5 hours)
+- Just a number (1-24 = hours, 5-60 = minutes)
+
+Type your choice:
         """.format(name)
         
         await update.message.reply_text(interval_message, parse_mode=ParseMode.MARKDOWN)
@@ -148,17 +160,59 @@ Type a number between 1 and 24:
     async def setup_interval(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle interval input"""
         try:
-            interval = int(update.message.text.strip())
-            if not 1 <= interval <= 24:
-                raise ValueError()
+            text = update.message.text.strip().lower()
+            
+            # Check for minutes suffix
+            if text.endswith('m') or text.endswith('min') or text.endswith('minutes'):
+                # Extract number for minutes
+                number_str = text.rstrip('minutes').rstrip('min').rstrip('m').strip()
+                interval_minutes = int(number_str)
+                
+                if not 5 <= interval_minutes <= 60:
+                    raise ValueError("Minutes must be between 5 and 60")
+                
+                context.user_data['interval_minutes'] = interval_minutes
+                context.user_data['interval_hours'] = None
+                frequency_text = f"Every {interval_minutes} minute{'s' if interval_minutes != 1 else ''}"
+                
+            elif text.endswith('h') or text.endswith('hour') or text.endswith('hours'):
+                # Extract number for hours
+                number_str = text.rstrip('hours').rstrip('hour').rstrip('h').strip()
+                interval_hours = int(number_str)
+                
+                if not 1 <= interval_hours <= 24:
+                    raise ValueError("Hours must be between 1 and 24")
+                
+                context.user_data['interval_hours'] = interval_hours
+                context.user_data['interval_minutes'] = None
+                frequency_text = f"Every {interval_hours} hour{'s' if interval_hours != 1 else ''}"
+                
+            else:
+                # Default behavior: number alone
+                interval = int(text)
+                
+                # If number is small (5-60), assume minutes; if larger (1-24), assume hours
+                if 5 <= interval <= 60:
+                    context.user_data['interval_minutes'] = interval
+                    context.user_data['interval_hours'] = None
+                    frequency_text = f"Every {interval} minute{'s' if interval != 1 else ''}"
+                elif 1 <= interval <= 24:
+                    context.user_data['interval_hours'] = interval
+                    context.user_data['interval_minutes'] = None
+                    frequency_text = f"Every {interval} hour{'s' if interval != 1 else ''}"
+                else:
+                    raise ValueError("Invalid interval")
+                    
         except ValueError:
-            await update.message.reply_text("⚠️ Please enter a valid number between 1 and 24:")
+            await update.message.reply_text(
+                "⚠️ Please enter a valid interval:\n"
+                "• For minutes: 5-60 (e.g., '5m' or '15')\n"
+                "• For hours: 1-24 (e.g., '5h' or '12')"
+            )
             return INTERVAL
         
-        context.user_data['interval_hours'] = interval
-        
         spread_message = """
-✅ Check interval set: Every {} hour{}
+✅ Check interval set: {}
 
 *Step 3/5:* What's your minimum spread threshold?
 
@@ -172,7 +226,7 @@ Enter minimum spread in basis points (bps):
 • 300+ = Rare, very large opportunities
 
 Type a number (default is 100):
-        """.format(interval, "s" if interval != 1 else "")
+        """.format(frequency_text)
         
         await update.message.reply_text(spread_message, parse_mode=ParseMode.MARKDOWN)
         return MIN_SPREAD
@@ -270,7 +324,8 @@ Type 1 or 2:
         setting_data = {
             'chat_id': update.effective_chat.id,
             'name': context.user_data['alert_name'],
-            'interval_hours': context.user_data['interval_hours'],
+            'interval_hours': context.user_data.get('interval_hours'),
+            'interval_minutes': context.user_data.get('interval_minutes'),
             'min_spread': context.user_data['min_spread'],
             'max_spread': 500,  # Default max
             'selected_dexes': context.user_data['selected_dexes'],
@@ -283,28 +338,37 @@ Type 1 or 2:
         setting_id = await self.db.create_notification_setting(setting_data)
         
         if setting_id:
+            # Create frequency text based on what was set
+            if setting_data.get('interval_minutes'):
+                frequency_text = f"Every {setting_data['interval_minutes']} minute{'s' if setting_data['interval_minutes'] != 1 else ''}"
+                next_notification_time = setting_data['interval_minutes']
+                next_notification_unit = "minute{'s' if setting_data['interval_minutes'] != 1 else ''}"
+            else:
+                frequency_text = f"Every {setting_data['interval_hours']} hour{'s' if setting_data['interval_hours'] != 1 else ''}"
+                next_notification_time = setting_data['interval_hours']
+                next_notification_unit = "hour{'s' if setting_data['interval_hours'] != 1 else ''}"
+                
             summary_message = """
 ✅ *Alert Created Successfully!*
 
 📋 *Alert Summary:*
 🏷️ Name: {}
-⏰ Frequency: Every {} hour{}
+⏰ Frequency: {}
 💰 Min Spread: {} bps
 🔄 DEXes: {}
 🎯 Filter: {}
 
-Your first notification will be sent within {} hour{}.
+Your first notification will be sent within {} {}.
 
 Use /alerts to manage your alerts or /setup to create another one!
             """.format(
                 setting_data['name'],
-                setting_data['interval_hours'],
-                "s" if setting_data['interval_hours'] != 1 else "",
+                frequency_text,
                 int(setting_data['min_spread']),
                 ", ".join(setting_data['selected_dexes']),
                 filter_names[choice],
-                setting_data['interval_hours'],
-                "s" if setting_data['interval_hours'] != 1 else ""
+                next_notification_time,
+                next_notification_unit
             )
             
             logger.info(f"Alert created: {setting_id} for chat_id: {update.effective_chat.id}")
@@ -348,12 +412,18 @@ Use /setup to create your first alert and start receiving notifications about th
                              "High spread only" if alert['show_high_spread_only'] else \
                              "All opportunities"
                 
+                # Format interval text based on whether it's hours or minutes
+                if alert.get('interval_minutes'):
+                    interval_text = f"Every {alert['interval_minutes']} minute{'s' if alert['interval_minutes'] != 1 else ''}"
+                else:
+                    interval_text = f"Every {alert['interval_hours']} hour{'s' if alert['interval_hours'] != 1 else ''}"
+                
                 last_sent = "Never" if not alert['last_sent'] else \
                            datetime.fromisoformat(str(alert['last_sent'])).strftime("%m/%d %H:%M")
                 
                 message += f"""
 {i}️⃣ *{alert['name']}*
-⏰ Every {alert['interval_hours']} hour{"s" if alert['interval_hours'] != 1 else ""}
+⏰ {interval_text}
 💰 Spread ≥ {int(alert['min_spread'])} bps
 🔄 {dex_list}
 🎯 {filter_type}
@@ -378,7 +448,13 @@ Use /setup to create your first alert and start receiving notifications about th
         
         message = "🗑️ *Select alert to delete:*\n\n"
         for i, alert in enumerate(alerts, 1):
-            message += f"{i}️⃣ {alert['name']} (Every {alert['interval_hours']}h) - ID: {alert['id']}\n"
+            # Format interval text
+            if alert.get('interval_minutes'):
+                interval_text = f"Every {alert['interval_minutes']}m"
+            else:
+                interval_text = f"Every {alert['interval_hours']}h"
+            
+            message += f"{i}️⃣ {alert['name']} ({interval_text}) - ID: {alert['id']}\n"
         
         message += "\nType the alert ID number to delete it, or /cancel to abort:"
         
