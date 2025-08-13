@@ -162,4 +162,9 @@ if __name__ == "__main__":
     # Create bot and run polling (PTB manages the asyncio loop internally)
     bot = create_bot_from_env()
     # Run polling until terminated; lifecycle hooks will init DB & scheduler
-    bot.application.run_polling()
+    # Configure polling with longer interval to reduce API calls frequency
+    bot.application.run_polling(
+        poll_interval=5.0,  # Check for updates every 5 seconds instead of default 1s
+        timeout=30,         # Long polling timeout of 30s
+        bootstrap_retries=-1  # Infinite retries on connection errors
+    )

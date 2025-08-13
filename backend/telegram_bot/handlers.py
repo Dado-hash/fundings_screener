@@ -243,10 +243,9 @@ Type your selection (e.g. "1,2,4"):
 Choose your filter preference:
 
 1️⃣ *All opportunities* - Every market above your spread threshold
-2️⃣ *Arbitrage only* - Opposite funding rates (best for arbitrage)
-3️⃣ *High spread only* - Spreads ≥100 bps (larger opportunities)
+2️⃣ *Best Arbitrage* - Only opposite funding rates (perfect for arbitrage trading)
 
-Type 1, 2, or 3:
+Type 1 or 2:
         """.format(dex_names)
         
         await update.message.reply_text(filter_message, parse_mode=ParseMode.MARKDOWN)
@@ -256,16 +255,15 @@ Type 1, 2, or 3:
         """Handle filter type selection and complete setup"""
         try:
             choice = int(update.message.text.strip())
-            if choice not in [1, 2, 3]:
+            if choice not in [1, 2]:
                 raise ValueError()
         except ValueError:
-            await update.message.reply_text("⚠️ Please enter 1, 2, or 3:")
+            await update.message.reply_text("⚠️ Please enter 1 or 2:")
             return FILTER_TYPE
         
         filter_names = {
             1: "All opportunities",
-            2: "Arbitrage only", 
-            3: "High spread only"
+            2: "Best Arbitrage"
         }
         
         # Prepare setting data
@@ -276,8 +274,8 @@ Type 1, 2, or 3:
             'min_spread': context.user_data['min_spread'],
             'max_spread': 500,  # Default max
             'selected_dexes': context.user_data['selected_dexes'],
-            'show_arbitrage_only': choice == 2,
-            'show_high_spread_only': choice == 3,
+            'show_arbitrage_only': choice == 2,  # Only option 2 enables arbitrage filter
+            'show_high_spread_only': False,      # Remove high spread filter
             'max_results': 5
         }
         
