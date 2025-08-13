@@ -7,7 +7,7 @@ import logging
 from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters
 from telegram.ext import ContextTypes
-from .handlers import BotHandlers
+from .handlers import BotHandlers, NAME, INTERVAL, MIN_SPREAD, DEXES, FILTER_TYPE, SELECT_ALERT
 from .database import DatabaseManager
 from .scheduler import NotificationScheduler
 
@@ -68,11 +68,11 @@ class FundingRatesBot:
         setup_conv = ConversationHandler(
             entry_points=[CommandHandler("setup", self.handlers.setup_start)],
             states={
-                'NAME': [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_name)],
-                'INTERVAL': [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_interval)],
-                'MIN_SPREAD': [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_min_spread)],
-                'DEXES': [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_dexes)],
-                'FILTER_TYPE': [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_filter_type)],
+                NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_name)],
+                INTERVAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_interval)],
+                MIN_SPREAD: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_min_spread)],
+                DEXES: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_dexes)],
+                FILTER_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.setup_filter_type)],
             },
             fallbacks=[CommandHandler("cancel", self.handlers.cancel_setup)]
         )
@@ -82,7 +82,7 @@ class FundingRatesBot:
         delete_conv = ConversationHandler(
             entry_points=[CommandHandler("delete", self.handlers.delete_start)],
             states={
-                'SELECT_ALERT': [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.delete_confirm)],
+                SELECT_ALERT: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.delete_confirm)],
             },
             fallbacks=[CommandHandler("cancel", self.handlers.cancel_delete)]
         )

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Conversation states
 NAME, INTERVAL, MIN_SPREAD, DEXES, FILTER_TYPE = range(5)
-SELECT_ALERT = range(1)
+SELECT_ALERT = 10  # Use a different number to avoid conflict
 
 AVAILABLE_DEXES = ['dYdX', 'Hyperliquid', 'Paradex', 'Extended']
 
