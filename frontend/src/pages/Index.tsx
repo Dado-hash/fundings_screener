@@ -5,7 +5,7 @@ import { FundingRatesFilters } from '../components/FundingRatesFilters';
 import { FundingRatesStats } from '../components/FundingRatesStats';
 import { useFundingRates } from '../hooks/useFundingRates';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
-import { AVAILABLE_DEXES } from '../components/FundingRatesFilters';
+import { AVAILABLE_DEXES, SortOption } from '../components/FundingRatesFilters';
 
 const FILTERS_STORAGE_KEY = 'funding_rates_filters_v2'; // Changed key to force reset of old data
 
@@ -19,15 +19,21 @@ const Index = () => {
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters);
-        // Migration: add selectedDexes if missing from old saved data
-        return {
+        // Migration: add missing properties from old saved data
+        const defaultFilters = {
           showArbitrageOpportunities: false,
           showHighSpread: false,
           selectedDexes: [...AVAILABLE_DEXES],
           minSpread: 0,
           maxSpread: 500,
-          ...parsed, // Override with saved values
+          sortBy: 'none' as SortOption,
+        };
+        
+        return {
+          ...defaultFilters,
+          ...parsed,
           selectedDexes: parsed.selectedDexes || [...AVAILABLE_DEXES], // Ensure selectedDexes exists
+          sortBy: (parsed.sortBy || 'none') as SortOption, // Ensure sortBy exists
         };
       } catch (error) {
         console.warn('Error parsing saved filters:', error);
@@ -38,7 +44,8 @@ const Index = () => {
       showHighSpread: false,
       selectedDexes: [...AVAILABLE_DEXES],
       minSpread: 0,
-      maxSpread: 500
+      maxSpread: 500,
+      sortBy: 'none' as SortOption
     };
   });
 
@@ -76,10 +83,39 @@ const Index = () => {
     return filtered;
   };
 
+  // Helper function to sort data based on the selected sort option
+  const applySorting = (data: typeof fundingData, sortBy: SortOption, selectedDexes: string[]) => {
+    if (sortBy === 'none') return data;
+    
+    const safeDexes = selectedDexes || [...AVAILABLE_DEXES];
+    
+    return [...data].sort((a, b) => {
+      switch (sortBy) {
+        case 'max-spread-desc': {
+          const aSpread = calculateMaxSpread(a.dexRates, safeDexes).spread;
+          const bSpread = calculateMaxSpread(b.dexRates, safeDexes).spread;
+          return bSpread - aSpread; // Descending
+        }
+        case 'max-spread-asc': {
+          const aSpread = calculateMaxSpread(a.dexRates, safeDexes).spread;
+          const bSpread = calculateMaxSpread(b.dexRates, safeDexes).spread;
+          return aSpread - bSpread; // Ascending
+        }
+        case 'market-asc':
+          return a.market.localeCompare(b.market); // A-Z
+        case 'market-desc':
+          return b.market.localeCompare(a.market); // Z-A
+        default:
+          return 0;
+      }
+    });
+  };
+
   // Update filtered data when funding data changes, preserving active filters
   useEffect(() => {
     const filtered = applyFilters(fundingData, activeFilters);
-    setFilteredData(filtered);
+    const sorted = applySorting(filtered, activeFilters.sortBy, activeFilters.selectedDexes);
+    setFilteredData(sorted);
   }, [fundingData, activeFilters]);
 
   const handleFilterChange = (filters: typeof activeFilters) => {
@@ -230,7 +266,12 @@ const Index = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <FundingRatesTable data={filteredData} selectedDexes={activeFilters.selectedDexes} />
+          <FundingRatesTable 
+            data={filteredData} 
+            selectedDexes={activeFilters.selectedDexes}
+            sortBy={activeFilters.sortBy}
+            onSortChange={(sortBy) => handleFilterChange({...activeFilters, sortBy})}
+          />
         </div>
       </div>
     </div>

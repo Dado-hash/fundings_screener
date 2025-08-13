@@ -8,12 +8,15 @@ import { Filter, RotateCcw } from '@/lib/icons';
 // Available DEX names from the backend API
 export const AVAILABLE_DEXES = ['dYdX', 'Hyperliquid', 'Paradex', 'Extended'] as const;
 
+export type SortOption = 'none' | 'max-spread-desc' | 'max-spread-asc' | 'market-asc' | 'market-desc';
+
 interface FilterProps {
   showArbitrageOpportunities: boolean;
   showHighSpread: boolean;
   selectedDexes: string[];
   minSpread: number;
   maxSpread: number;
+  sortBy: SortOption;
 }
 
 interface FundingRatesFiltersProps {
@@ -61,7 +64,8 @@ export const FundingRatesFilters = ({ filters, onFilterChange }: FundingRatesFil
       showHighSpread: false,
       selectedDexes: [...AVAILABLE_DEXES],
       minSpread: 0,
-      maxSpread: 500
+      maxSpread: 500,
+      sortBy: 'none'
     });
   };
 

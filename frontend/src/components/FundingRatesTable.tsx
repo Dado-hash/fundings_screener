@@ -1,16 +1,19 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUpDown, TrendingUp, TrendingDown } from '@/lib/icons';
+import { ArrowUpDown, TrendingUp, TrendingDown, ChevronUp, ChevronDown } from '@/lib/icons';
 import { FundingRateData } from '../data/mockFundingData';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
+import { SortOption } from './FundingRatesFilters';
 
 interface FundingRatesTableProps {
   data: FundingRateData[];
   selectedDexes: string[];
+  sortBy: SortOption;
+  onSortChange: (sortBy: SortOption) => void;
 }
 
-export const FundingRatesTable = ({ data, selectedDexes }: FundingRatesTableProps) => {
+export const FundingRatesTable = ({ data, selectedDexes, sortBy, onSortChange }: FundingRatesTableProps) => {
   const formatRate = (rate: number) => {
     return `${rate > 0 ? '+' : ''}${rate.toFixed(1)}`;
   };
@@ -34,6 +37,33 @@ export const FundingRatesTable = ({ data, selectedDexes }: FundingRatesTableProp
     }
   };
 
+  const handleSort = (column: 'market' | 'max-spread') => {
+    if (column === 'market') {
+      if (sortBy === 'market-asc') {
+        onSortChange('market-desc');
+      } else {
+        onSortChange('market-asc');
+      }
+    } else if (column === 'max-spread') {
+      if (sortBy === 'max-spread-desc') {
+        onSortChange('max-spread-asc');
+      } else {
+        onSortChange('max-spread-desc');
+      }
+    }
+  };
+
+  const getSortIcon = (column: 'market' | 'max-spread') => {
+    if (column === 'market') {
+      if (sortBy === 'market-asc') return <ChevronUp className="h-4 w-4" />;
+      if (sortBy === 'market-desc') return <ChevronDown className="h-4 w-4" />;
+    } else if (column === 'max-spread') {
+      if (sortBy === 'max-spread-asc') return <ChevronUp className="h-4 w-4" />;
+      if (sortBy === 'max-spread-desc') return <ChevronDown className="h-4 w-4" />;
+    }
+    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -49,9 +79,25 @@ export const FundingRatesTable = ({ data, selectedDexes }: FundingRatesTableProp
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-4 font-semibold">Market</th>
+                <th 
+                  className="text-left p-4 font-semibold cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => handleSort('market')}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Market</span>
+                    {getSortIcon('market')}
+                  </div>
+                </th>
                 <th className="text-center p-4 font-semibold">Selected DEXs</th>
-                <th className="text-center p-4 font-semibold">Max Spread</th>
+                <th 
+                  className="text-center p-4 font-semibold cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => handleSort('max-spread')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span>Max Spread</span>
+                    {getSortIcon('max-spread')}
+                  </div>
+                </th>
                 <th className="text-center p-4 font-semibold">Best Pair</th>
                 <th className="text-center p-4 font-semibold">Opportunity</th>
               </tr>
