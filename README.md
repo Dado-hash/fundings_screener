@@ -54,7 +54,20 @@ A comprehensive web application for monitoring and analyzing cryptocurrency fund
    cd fundings_screener
    ```
 
-2. **Start the application** (automatic script):
+2. **Configure environment variables**:
+   ```bash
+   # Copy the template and fill in your values
+   cp secrets/.env.template secrets/.env
+   
+   # Edit secrets/.env with your API keys:
+   # - TELEGRAM_BOT_TOKEN (get from @BotFather)
+   # - RPC_URL (get from Infura)
+   # - Other optional API keys
+   ```
+   
+   📋 See `secrets/README.md` for detailed setup instructions.
+
+3. **Start the application** (automatic script):
    ```bash
    ./start.sh
    ```
@@ -152,6 +165,32 @@ Returns funding rates from all DEXs.
 
 ### GET /api/health
 Backend health check.
+
+## 🤖 Telegram Bot
+
+**NEW**: Automated Telegram notifications for funding rate opportunities!
+
+### Features
+- 🔔 **Custom Alerts**: Set personalized notifications based on spread thresholds
+- ⏰ **Flexible Intervals**: Choose notification frequency (1-24 hours)  
+- 🎯 **Smart Filters**: Arbitrage-only, high-spread, or custom criteria
+- 📱 **Easy Setup**: Step-by-step configuration via chat commands
+
+### Bot Commands
+- `/start` - Welcome and registration
+- `/setup` - Create new alerts with custom filters
+- `/alerts` - View your active alerts
+- `/delete` - Remove existing alerts
+- `/help` - Command reference
+
+### Getting Started with Bot
+1. **Create your bot**: Message @BotFather on Telegram, use `/newbot`
+2. **Get the token**: Copy the token provided by @BotFather  
+3. **Configure**: Add `TELEGRAM_BOT_TOKEN="your-token"` to `secrets/.env`
+4. **Test**: Run `python backend/test_bot.py`
+5. **Start**: Run `python -m backend.telegram_bot.bot`
+
+📋 See `IMPLEMENTATION.md` for detailed bot setup instructions.
 
 ## 🔄 Technical Features
 

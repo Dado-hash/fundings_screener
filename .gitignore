@@ -166,8 +166,13 @@ out/
 
 .claude/
 
-# Secrets and Environment Variables
-secrets/
+# Secrets and Environment Variables  
+secrets/.env
+secrets/*.env
+secrets/*.env.*
+!secrets/.env.template
+!secrets/.env.example
+!secrets/README.md
 *.env
 *.env.*
 !.env.template
