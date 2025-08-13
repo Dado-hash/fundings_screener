@@ -194,6 +194,8 @@ class DatabaseManager:
             
             if self.is_postgres:
                 self.connection.commit()
+            else:
+                self.connection.commit()
             
             logger.info(f"Subscription created/updated for chat_id: {chat_id}")
             return True
@@ -247,6 +249,8 @@ class DatabaseManager:
             cursor.close()
             
             if self.is_postgres:
+                self.connection.commit()
+            else:
                 self.connection.commit()
             
             logger.info(f"Notification setting created: {setting_id} for chat_id: {setting_data['chat_id']}")
@@ -315,6 +319,8 @@ class DatabaseManager:
             cursor.close()
             
             if self.is_postgres:
+                self.connection.commit()
+            else:
                 self.connection.commit()
             
             logger.info(f"Alert {alert_id} deactivated for chat_id: {chat_id}")
@@ -394,6 +400,8 @@ class DatabaseManager:
             
             if self.is_postgres:
                 self.connection.commit()
+            else:
+                self.connection.commit()
             
             return True
             
@@ -418,6 +426,8 @@ class DatabaseManager:
             cursor.close()
             
             if self.is_postgres:
+                self.connection.commit()
+            else:
                 self.connection.commit()
                 
         except Exception as e:

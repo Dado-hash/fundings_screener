@@ -35,7 +35,11 @@ class BotHandlers:
         username = update.effective_user.username if update.effective_user else None
         
         # Create subscription
-        await self.db.create_subscription(chat_id, user_id, username)
+        await self.db.create_subscription(
+            chat_id=chat_id,
+            user_id=user_id,
+            username=username
+        )
         
         welcome_message = """
 🤖 *Welcome to Funding Rates Alert Bot!*
