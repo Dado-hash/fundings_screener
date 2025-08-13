@@ -31,32 +31,39 @@ class FundingRatesBot:
         """
         self.token = token
         self.api_base_url = api_base_url
-        
+
         # Initialize database manager
         self.db = DatabaseManager(database_url)
-        
+
         # Initialize handlers
         self.handlers = BotHandlers(self.db, self.api_base_url)
-        
-        # Initialize application
-        self.application = Application.builder().token(token).build()
-        
+
+        # Initialize application with lifecycle hooks
+        self.application = (
+            Application
+            .builder()
+            .token(token)
+            .post_init(self._post_init)
+            .post_shutdown(self._post_shutdown)
+            .build()
+        )
+
         # Initialize scheduler
         self.scheduler = NotificationScheduler(self.db, self.api_base_url, token)
-        
+
         # Setup handlers
         self._setup_handlers()
-        
+
         logger.info("FundingRatesBot initialized successfully")
-    
+
     def _setup_handlers(self):
         """Setup all command and message handlers"""
-        
+
         # Basic commands
         self.application.add_handler(CommandHandler("start", self.handlers.start_command))
         self.application.add_handler(CommandHandler("help", self.handlers.help_command))
         self.application.add_handler(CommandHandler("alerts", self.handlers.list_alerts_command))
-        
+
         # Setup conversation handler for creating alerts
         setup_conv = ConversationHandler(
             entry_points=[CommandHandler("setup", self.handlers.setup_start)],
@@ -70,7 +77,7 @@ class FundingRatesBot:
             fallbacks=[CommandHandler("cancel", self.handlers.cancel_setup)]
         )
         self.application.add_handler(setup_conv)
-        
+
         # Delete conversation handler
         delete_conv = ConversationHandler(
             entry_points=[CommandHandler("delete", self.handlers.delete_start)],
@@ -80,47 +87,56 @@ class FundingRatesBot:
             fallbacks=[CommandHandler("cancel", self.handlers.cancel_delete)]
         )
         self.application.add_handler(delete_conv)
-        
+
         logger.info("All handlers setup completed")
-    
+
     async def start(self):
         """Start the bot"""
         try:
-            # Initialize database
-            await self.db.initialize()
-            
-            # Start the scheduler
-            self.scheduler.start()
-            
-            # Start the bot
+            # For PTB v22, prefer run_polling in __main__. Keeping initialize/start
+            # here to support advanced/manual startup if needed.
             await self.application.initialize()
             await self.application.start()
-            await self.application.updater.start_polling()
-            
+
             logger.info("Bot started successfully")
-            
+
         except Exception as e:
             logger.error(f"Error starting bot: {e}")
             raise
-    
+
     async def stop(self):
         """Stop the bot"""
         try:
             # Stop scheduler
             self.scheduler.stop()
-            
+
             # Stop the application
-            await self.application.updater.stop()
             await self.application.stop()
             await self.application.shutdown()
-            
+
             # Close database connection
             await self.db.close()
-            
+
             logger.info("Bot stopped successfully")
-            
+
         except Exception as e:
             logger.error(f"Error stopping bot: {e}")
+
+    async def _post_init(self, app: Application) -> None:
+        """PTB lifecycle hook: runs after Application.initialize()."""
+        # Initialize database and start scheduler
+        await self.db.initialize()
+        self.scheduler.start()
+        logger.info("Post-init complete: DB initialized and scheduler started")
+
+    async def _post_shutdown(self, app: Application) -> None:
+        """PTB lifecycle hook: runs during Application.shutdown()."""
+        try:
+            self.scheduler.stop()
+            await self.db.close()
+            logger.info("Post-shutdown complete: scheduler stopped and DB closed")
+        except Exception as e:
+            logger.error(f"Error during post-shutdown: {e}")
 
 
 def create_bot_from_env() -> FundingRatesBot:
@@ -136,36 +152,14 @@ def create_bot_from_env() -> FundingRatesBot:
 
 
 if __name__ == "__main__":
-    import asyncio
     from dotenv import load_dotenv
+    import os
     
     # Load environment variables from secrets folder
-    import os
     secrets_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'secrets', '.env')
     load_dotenv(secrets_path)
     
-    # Create and start bot
+    # Create bot and run polling (PTB manages the asyncio loop internally)
     bot = create_bot_from_env()
-    
-    async def main():
-        try:
-            await bot.start()
-            # Keep running
-            import signal
-            import sys
-            
-            def signal_handler(sig, frame):
-                print('Bot stopping...')
-                asyncio.create_task(bot.stop())
-                sys.exit(0)
-            
-            signal.signal(signal.SIGINT, signal_handler)
-            signal.signal(signal.SIGTERM, signal_handler)
-            
-            # Keep the bot running
-            await asyncio.Event().wait()
-            
-        except KeyboardInterrupt:
-            await bot.stop()
-    
-    asyncio.run(main())
+    # Run polling until terminated; lifecycle hooks will init DB & scheduler
+    bot.application.run_polling()
