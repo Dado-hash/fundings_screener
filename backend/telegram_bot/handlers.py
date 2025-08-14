@@ -68,19 +68,29 @@ class BotHandlers:
 
 I'll help you track the best DeFi perpetual funding rate arbitrage opportunities and send you personalized notifications.
 
-*Available Commands:*
-/setup - Create a new custom alert
-/alerts - View your active alerts
-/delete - Delete an existing alert
-/help - Show this help message
+⚠️ *IMPORTANT: Registration Required*
+To use this bot, you need to register with one of our supported DEX referral links first.
 
-*How it works:*
-1️⃣ Use `/setup` to create personalized alerts
-2️⃣ Choose your preferred DEXes and filters
-3️⃣ Set notification frequency (1-24 hours)
-4️⃣ Receive automatic notifications with the best opportunities!
+*🔐 How to Get Access:*
+1️⃣ Use `/register` to see our referral links
+2️⃣ Sign up on your preferred DEX with our referral
+3️⃣ Provide your wallet address to the bot
+4️⃣ Wait for admin approval (based on trading volume)
+5️⃣ Start creating alerts once approved!
 
-Ready to create your first alert? Use `/setup` to get started! 🚀
+*📋 Commands:*
+/register - Start registration process
+/status - Check your registration status
+/setup - Create alerts (requires approval)
+/alerts - View your alerts (requires approval)
+/delete - Delete alerts (requires approval)
+
+*🎯 Supported DEXs:*
+• dYdX - Decentralized perpetual trading
+• Hyperliquid - High-performance perps
+• Paradex - Professional derivatives platform
+
+Ready to get started? Use `/register` to begin! 🚀
         """
         
         await update.message.reply_text(welcome_message, parse_mode=ParseMode.MARKDOWN)
@@ -92,37 +102,36 @@ Ready to create your first alert? Use `/setup` to get started! 🚀
         help_message = """
 🤖 *Funding Rates Alert Bot - Help*
 
-*Commands:*
-/start - Welcome message and bot introduction
+⚠️ *Access Required:* You must register and be approved to use alert features.
+
+*📋 Available Commands:*
+
+*🔐 Registration:*
+/register - Start registration process
+/status - Check your registration status
+
+*📊 Alert Management (requires approval):*
 /setup - Create a new notification alert
 /alerts - List all your active alerts
 /delete - Delete an existing alert
+
+*ℹ️ Information:*
+/start - Welcome message and bot introduction
 /help - Show this help message
 
-*How to create alerts:*
-1️⃣ Use `/setup` command
-2️⃣ Follow the step-by-step configuration:
-   • Alert name (for your reference)
-   • Check interval (1-24 hours)  
-   • Minimum spread threshold (in basis points)
-   • Select DEXes to monitor
-   • Choose filter type (all, arbitrage only, high spread only)
+*🚀 How to Get Started:*
+1️⃣ Use `/register` to see referral links
+2️⃣ Sign up on a DEX with our referral link
+3️⃣ Provide your wallet address
+4️⃣ Wait for admin approval
+5️⃣ Start creating alerts!
 
-*Alert Types:*
-🎯 *Arbitrage Opportunities* - Opposite funding rates (long/short)
-📊 *High Spread* - Large differences between DEXes (≥100 bps)
-📈 *All Opportunities* - Every market above your threshold
+*🎯 Supported DEXs:*
+• dYdX - Decentralized perpetual trading
+• Hyperliquid - High-performance perps  
+• Paradex - Professional derivatives platform
 
-*Supported DEXes:*
-• dYdX
-• Hyperliquid  
-• Paradex
-• Extended
-
-*Example Alert:*
-"Bitcoin Arbitrage" - Every 5 hours, spread ≥150 bps, dYdX + Hyperliquid, arbitrage only
-
-Questions? Just send me a message!
+*💡 Tip:* Higher trading volumes increase approval chances!
         """
         
         await update.message.reply_text(help_message, parse_mode=ParseMode.MARKDOWN)
