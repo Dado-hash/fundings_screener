@@ -117,9 +117,9 @@ class AdminApiService {
     return this.makeRequest<ReferralLink>(`/api/admin/update-referral-links`, {
       method: 'PUT',
       body: JSON.stringify({
-        dex_name: id,
+        dex_name: updates.name || id, // Use the name from updates, fallback to id
         referral_url: updates.url,
-        referral_code: updates.name
+        referral_code: `REF_${(updates.name || id).toUpperCase().replace(/\s+/g, '_')}` // Generate referral code from name
       }),
     });
   }

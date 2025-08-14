@@ -33,13 +33,6 @@ export const UserRegistrations = ({ onStatsUpdate }: UserRegistrationsProps) => 
     });
 
     if (response.success && response.data) {
-      console.log('Registrations data:', response.data); // Debug log
-      // Check for unexpected status values
-      response.data.forEach((reg, index) => {
-        if (!['pending', 'approved', 'rejected'].includes(reg.status)) {
-          console.warn(`Unexpected status "${reg.status}" at index ${index}:`, reg);
-        }
-      });
       setRegistrations(response.data);
     } else {
       toast.error(`Errore nel caricamento delle registrazioni: ${response.error}`);

@@ -149,12 +149,7 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_user_registrations_access ON user_registrations(access_granted);
             CREATE INDEX IF NOT EXISTS idx_user_registrations_dex ON user_registrations(dex_name);
             
-            -- Insert default referral links
-            INSERT INTO dex_referral_programs (dex_name, referral_code, referral_url) VALUES 
-            ('dydx', 'YOUR_DYDX_REF', 'https://trade.dydx.exchange/?ref=YOUR_DYDX_REF'),
-            ('hyperliquid', 'YOUR_HL_REF', 'https://app.hyperliquid.xyz/join/YOUR_HL_REF'),
-            ('paradex', 'YOUR_PARADEX_REF', 'https://app.paradex.trade/?ref=YOUR_PARADEX_REF')
-            ON CONFLICT (dex_name) DO NOTHING;
+            -- Default referral links removed - managed via admin panel
             """
         else:
             # SQLite schema
@@ -228,11 +223,7 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_user_registrations_access ON user_registrations(access_granted);
             CREATE INDEX IF NOT EXISTS idx_user_registrations_dex ON user_registrations(dex_name);
             
-            -- Insert default referral links
-            INSERT OR IGNORE INTO dex_referral_programs (dex_name, referral_code, referral_url) VALUES 
-            ('dydx', 'YOUR_DYDX_REF', 'https://trade.dydx.exchange/?ref=YOUR_DYDX_REF'),
-            ('hyperliquid', 'YOUR_HL_REF', 'https://app.hyperliquid.xyz/join/YOUR_HL_REF'),
-            ('paradex', 'YOUR_PARADEX_REF', 'https://app.paradex.trade/?ref=YOUR_PARADEX_REF');
+            -- Default referral links removed - managed via admin panel
             """
         
         cursor = self.connection.cursor()
@@ -594,7 +585,17 @@ class DatabaseManager:
             
             referrals = []
             for row in cursor.fetchall():
-                referrals.append(dict(row))
+                # Convert to format expected by frontend
+                referrals.append({
+                    'id': str(row[0]),
+                    'name': row[1],  # dex_name -> name
+                    'url': row[3],   # referral_url -> url
+                    'clicks': 0,     # Default value (not tracked yet)
+                    'registrations': 0,  # Default value (not tracked yet)
+                    'created_at': row[5] if row[5] else datetime.now().isoformat(),
+                    'updated_at': row[5] if row[5] else datetime.now().isoformat(),
+                    'is_active': bool(row[4]) if row[4] is not None else True
+                })
             
             cursor.close()
             return referrals
@@ -760,6 +761,94 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"Error updating referral link: {e}")
+            return False
+
+    async def create_referral_link(self, name: str, url: str) -> Optional[Dict[str, Any]]:
+        """Create a new referral link"""
+        try:
+            cursor = self.connection.cursor()
+            
+            # Generate a default referral code (can be updated later)
+            referral_code = f"REF_{name.upper().replace(' ', '_')}"
+            
+            if self.is_postgres:
+                query = """
+                INSERT INTO dex_referral_programs (dex_name, referral_code, referral_url)
+                VALUES (%s, %s, %s)
+                RETURNING id, dex_name, referral_code, referral_url, is_active, created_at
+                """
+                cursor.execute(query, (name, referral_code, url))
+                result = cursor.fetchone()
+            else:
+                query = """
+                INSERT INTO dex_referral_programs (dex_name, referral_code, referral_url)
+                VALUES (?, ?, ?)
+                """
+                cursor.execute(query, (name, referral_code, url))
+                
+                # Get the inserted record
+                cursor.execute("""
+                    SELECT id, dex_name, referral_code, referral_url, is_active, created_at
+                    FROM dex_referral_programs
+                    WHERE rowid = last_insert_rowid()
+                """)
+                result = cursor.fetchone()
+            
+            cursor.close()
+            
+            if self.is_postgres:
+                self.connection.commit()
+            else:
+                self.connection.commit()
+            
+            if result:
+                # Convert to dict format expected by frontend
+                return {
+                    'id': str(result[0]),
+                    'name': result[1],
+                    'url': result[3],
+                    'clicks': 0,  # Default value
+                    'registrations': 0,  # Default value
+                    'created_at': result[5] if result[5] else datetime.now().isoformat(),
+                    'updated_at': result[5] if result[5] else datetime.now().isoformat(),
+                    'is_active': bool(result[4]) if result[4] is not None else True
+                }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error creating referral link: {e}")
+            return None
+
+    async def delete_referral_link(self, link_id: str) -> bool:
+        """Delete a referral link"""
+        try:
+            cursor = self.connection.cursor()
+            
+            if self.is_postgres:
+                query = "DELETE FROM dex_referral_programs WHERE id = %s"
+            else:
+                query = "DELETE FROM dex_referral_programs WHERE id = ?"
+            
+            cursor.execute(query, (link_id,))
+            
+            if self.is_postgres:
+                deleted_count = cursor.rowcount
+            else:
+                deleted_count = cursor.rowcount
+            
+            cursor.close()
+            
+            if self.is_postgres:
+                self.connection.commit()
+            else:
+                self.connection.commit()
+            
+            logger.info(f"Referral link {link_id} deleted: {deleted_count > 0}")
+            return deleted_count > 0
+            
+        except Exception as e:
+            logger.error(f"Error deleting referral link: {e}")
             return False
     
     async def close(self):

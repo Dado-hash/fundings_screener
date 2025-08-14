@@ -421,7 +421,7 @@ def get_user_registrations_by_id(chat_id):
             'error': str(e)
         }), 500
 
-@app.route('/api/admin/update-referral-links', methods=['POST'])
+@app.route('/api/admin/update-referral-links', methods=['POST', 'PUT'])
 def update_referral_links():
     """Update referral links"""
     try:
@@ -457,19 +457,81 @@ def update_referral_links():
             'error': str(e)
         }), 500
 
-@app.route('/api/admin/referral-links', methods=['GET'])
-def get_referral_links():
-    """Get all referral links"""
+@app.route('/api/admin/referral-links', methods=['GET', 'POST'])
+def handle_referral_links():
+    """Handle referral links - GET to retrieve, POST to create"""
+    if request.method == 'GET':
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            referral_links = loop.run_until_complete(db_manager.get_referral_links())
+            
+            return jsonify({
+                'success': True,
+                'data': referral_links,
+                'total': len(referral_links)
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    elif request.method == 'POST':
+        try:
+            data = request.get_json()
+            name = data.get('name')
+            url = data.get('url')
+            
+            if not name or not url:
+                return jsonify({
+                    'success': False,
+                    'error': 'Missing required fields: name, url'
+                }), 400
+            
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # Create the referral link
+            new_link = loop.run_until_complete(db_manager.create_referral_link(name, url))
+            
+            if new_link:
+                return jsonify({
+                    'success': True,
+                    'data': new_link,
+                    'message': 'Referral link created successfully'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Failed to create referral link'
+                }), 500
+                
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/admin/referral-links/<link_id>', methods=['DELETE'])
+def delete_referral_link(link_id):
+    """Delete a referral link"""
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        referral_links = loop.run_until_complete(db_manager.get_referral_links())
+        success = loop.run_until_complete(db_manager.delete_referral_link(link_id))
         
-        return jsonify({
-            'success': True,
-            'data': referral_links,
-            'total': len(referral_links)
-        })
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Referral link deleted successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to delete referral link or link not found'
+            }), 404
+            
     except Exception as e:
         return jsonify({
             'success': False,
