@@ -5,9 +5,9 @@ Main Telegram Bot Class
 import os
 import logging
 from telegram import Bot, Update
-from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
 from telegram.ext import ContextTypes
-from .handlers import BotHandlers, NAME, INTERVAL, MIN_SPREAD, DEXES, FILTER_TYPE, SELECT_ALERT
+from .handlers import BotHandlers, NAME, INTERVAL, MIN_SPREAD, DEXES, FILTER_TYPE, SELECT_ALERT, REGISTER_DEX, REGISTER_WALLET
 from .database import DatabaseManager
 from .scheduler import NotificationScheduler
 
@@ -63,6 +63,7 @@ class FundingRatesBot:
         self.application.add_handler(CommandHandler("start", self.handlers.start_command))
         self.application.add_handler(CommandHandler("help", self.handlers.help_command))
         self.application.add_handler(CommandHandler("alerts", self.handlers.list_alerts_command))
+        self.application.add_handler(CommandHandler("status", self.handlers.status_command))
 
         # Setup conversation handler for creating alerts
         setup_conv = ConversationHandler(
@@ -87,6 +88,17 @@ class FundingRatesBot:
             fallbacks=[CommandHandler("cancel", self.handlers.cancel_delete)]
         )
         self.application.add_handler(delete_conv)
+
+        # Registration conversation handler
+        register_conv = ConversationHandler(
+            entry_points=[CommandHandler("register", self.handlers.register_start)],
+            states={
+                REGISTER_DEX: [CallbackQueryHandler(self.handlers.register_dex_selection)],
+                REGISTER_WALLET: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.handlers.register_wallet_input)],
+            },
+            fallbacks=[CommandHandler("cancel", self.handlers.cancel_register)]
+        )
+        self.application.add_handler(register_conv)
 
         logger.info("All handlers setup completed")
 

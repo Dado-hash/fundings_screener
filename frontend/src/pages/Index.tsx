@@ -1,15 +1,21 @@
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { FundingRatesTable } from '../components/FundingRatesTable';
 import { FundingRatesFilters } from '../components/FundingRatesFilters';
 import { FundingRatesStats } from '../components/FundingRatesStats';
 import { useFundingRates } from '../hooks/useFundingRates';
 import { calculateMaxSpread, getOpportunityType } from '../utils/spreadCalculator';
 import { AVAILABLE_DEXES, SortOption } from '../components/FundingRatesFilters';
+import { Settings } from 'lucide-react';
 
 const FILTERS_STORAGE_KEY = 'funding_rates_filters_v2'; // Changed key to force reset of old data
 
-const Index = () => {
+interface IndexProps {
+  onNavigateToAdmin?: () => void;
+}
+
+const Index = ({ onNavigateToAdmin }: IndexProps) => {
   const { data: fundingData, loading, isRefreshing, error, lastUpdate } = useFundingRates();
   const [filteredData, setFilteredData] = useState(fundingData);
   
@@ -206,6 +212,21 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
+        {/* Admin Button */}
+        {onNavigateToAdmin && (
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNavigateToAdmin}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Admin
+            </Button>
+          </div>
+        )}
+        
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2 px-2">
             <span className="hidden sm:inline">DeFi Perp Funding Rates - Maximum Spread Analysis</span>

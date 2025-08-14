@@ -1,13 +1,31 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
 import json
 from datetime import datetime
 import threading
 import time
+import asyncio
+import os
+from telegram_bot.database import DatabaseManager
 
 app = Flask(__name__)
 CORS(app)
+
+# Initialize DatabaseManager
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///fundings_bot.db')
+db_manager = None
+
+async def init_db():
+    """Initialize database manager"""
+    global db_manager
+    db_manager = DatabaseManager(DATABASE_URL)
+    await db_manager.initialize()
+
+# Initialize database on startup
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+loop.run_until_complete(init_db())
 
 # Cache per i dati dei funding rates
 funding_cache = {}
@@ -20,7 +38,7 @@ def get_dydx_funding_rates():
     """Get funding rates from dYdX"""
     try:
         url = "https://indexer.dydx.trade/v4/perpetualMarkets"
-        r = requests.get(url, timeout=10)
+        r = requests.get(url, timeout=5)
         r.raise_for_status()
         data = r.json()
 
@@ -43,7 +61,7 @@ def get_hyperliquid_funding_rates():
     try:
         BASE_URL = "https://api.hyperliquid.xyz/info"
         payload = {"type": "metaAndAssetCtxs"}
-        response = requests.post(BASE_URL, json=payload, timeout=10)
+        response = requests.post(BASE_URL, json=payload, timeout=5)
         
         if response.ok:
             funding_data = response.json()
@@ -67,7 +85,7 @@ def get_paradex_funding_rates():
         BASE_URL = "https://api.prod.paradex.trade/v1"
         
         # Get all markets
-        response = requests.get(f"{BASE_URL}/markets", timeout=10)
+        response = requests.get(f"{BASE_URL}/markets", timeout=5)
         response.raise_for_status()
         data = response.json()
         
@@ -102,7 +120,7 @@ def get_extended_funding_rates():
     try:
         EXTENDED_API = "https://api.extended.exchange/api/v1/"
         url = f"{EXTENDED_API}/info/markets"
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=5)
         resp.raise_for_status()
         data = resp.json()
         
@@ -275,10 +293,201 @@ def health_check():
         'cache_age': time.time() - last_update if last_update else None
     })
 
+# Admin API Endpoints
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    """Get admin dashboard statistics"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Get all registrations
+        all_registrations = loop.run_until_complete(db_manager.get_all_registrations())
+        
+        # Calculate stats
+        total_registrations = len(all_registrations)
+        pending_registrations = sum(1 for reg in all_registrations if not reg.get('access_granted', False))
+        approved_registrations = sum(1 for reg in all_registrations if reg.get('access_granted', False))
+        rejected_registrations = 0  # We don't have rejected status yet
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'totalRegistrations': total_registrations,
+                'pendingRegistrations': pending_registrations,
+                'approvedRegistrations': approved_registrations,
+                'rejectedRegistrations': rejected_registrations
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/admin/pending-registrations', methods=['GET'])
+def get_pending_registrations():
+    """Get all pending user registrations"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        registrations = loop.run_until_complete(db_manager.get_pending_registrations())
+        
+        return jsonify({
+            'success': True,
+            'data': registrations,
+            'total': len(registrations)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/admin/approve-registration', methods=['POST'])
+def approve_registration():
+    """Approve a user registration"""
+    try:
+        data = request.get_json()
+        registration_id = data.get('registration_id')
+        admin_username = data.get('admin_username')
+        notes = data.get('notes', '')
+        
+        if not registration_id or not admin_username:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: registration_id, admin_username'
+            }), 400
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success = loop.run_until_complete(db_manager.approve_user_access(registration_id, admin_username, notes))
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Registration approved successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to approve registration'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/admin/all-registrations', methods=['GET'])
+def get_all_registrations():
+    """Get all registrations (pending + approved)"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Get both pending and approved registrations
+        all_registrations = loop.run_until_complete(db_manager.get_all_registrations())
+        
+        return jsonify({
+            'success': True,
+            'data': all_registrations,
+            'total': len(all_registrations)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/admin/user-registrations/<int:chat_id>', methods=['GET'])
+def get_user_registrations_by_id(chat_id):
+    """Get registrations for specific user"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        registrations = loop.run_until_complete(db_manager.get_user_registrations(chat_id))
+        
+        return jsonify({
+            'success': True,
+            'data': registrations,
+            'total': len(registrations),
+            'chat_id': chat_id
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/admin/update-referral-links', methods=['POST'])
+def update_referral_links():
+    """Update referral links"""
+    try:
+        data = request.get_json()
+        dex_name = data.get('dex_name')
+        referral_url = data.get('referral_url')
+        referral_code = data.get('referral_code')
+        
+        if not all([dex_name, referral_url, referral_code]):
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: dex_name, referral_url, referral_code'
+            }), 400
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success = loop.run_until_complete(db_manager.update_referral_link(dex_name, referral_code, referral_url))
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Referral link updated successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to update referral link'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/admin/referral-links', methods=['GET'])
+def get_referral_links():
+    """Get all referral links"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        referral_links = loop.run_until_complete(db_manager.get_referral_links())
+        
+        return jsonify({
+            'success': True,
+            'data': referral_links,
+            'total': len(referral_links)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
     print("Starting Funding Rates API server...")
     print("Endpoints:")
     print("  GET /api/funding-rates - Get funding rates from all DEXs")
     print("  GET /api/health - Health check")
+    print("")
+    print("Admin Endpoints:")
+    print("  GET /api/admin/pending-registrations - Get pending registrations")
+    print("  POST /api/admin/approve-registration - Approve a registration")
+    print("  GET /api/admin/all-registrations - Get all registrations")
+    print("  GET /api/admin/user-registrations/<chat_id> - Get user registrations")
+    print("  POST /api/admin/update-referral-links - Update referral links")
+    print("  GET /api/admin/referral-links - Get referral links")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)

@@ -118,6 +118,43 @@ class DatabaseManager:
                 markets_count INTEGER,
                 status VARCHAR(50)
             );
+            
+            -- Access control tables
+            CREATE TABLE IF NOT EXISTS dex_referral_programs (
+                id SERIAL PRIMARY KEY,
+                dex_name VARCHAR(50) NOT NULL UNIQUE,
+                referral_code VARCHAR(100) NOT NULL,
+                referral_url TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS user_registrations (
+                id SERIAL PRIMARY KEY,
+                telegram_chat_id BIGINT REFERENCES telegram_subscriptions(chat_id),
+                telegram_username VARCHAR(255),
+                wallet_address VARCHAR(100) NOT NULL,
+                dex_name VARCHAR(50) NOT NULL,
+                access_granted BOOLEAN DEFAULT FALSE,
+                access_granted_at TIMESTAMP,
+                access_granted_by VARCHAR(100),
+                registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(telegram_chat_id, dex_name)
+            );
+            
+            -- Indexes for performance
+            CREATE INDEX IF NOT EXISTS idx_user_registrations_chat_id ON user_registrations(telegram_chat_id);
+            CREATE INDEX IF NOT EXISTS idx_user_registrations_access ON user_registrations(access_granted);
+            CREATE INDEX IF NOT EXISTS idx_user_registrations_dex ON user_registrations(dex_name);
+            
+            -- Insert default referral links
+            INSERT INTO dex_referral_programs (dex_name, referral_code, referral_url) VALUES 
+            ('dydx', 'YOUR_DYDX_REF', 'https://trade.dydx.exchange/?ref=YOUR_DYDX_REF'),
+            ('hyperliquid', 'YOUR_HL_REF', 'https://app.hyperliquid.xyz/join/YOUR_HL_REF'),
+            ('paradex', 'YOUR_PARADEX_REF', 'https://app.paradex.trade/?ref=YOUR_PARADEX_REF')
+            ON CONFLICT (dex_name) DO NOTHING;
             """
         else:
             # SQLite schema
@@ -160,6 +197,42 @@ class DatabaseManager:
                 markets_count INTEGER,
                 status TEXT
             );
+            
+            -- Access control tables
+            CREATE TABLE IF NOT EXISTS dex_referral_programs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dex_name TEXT NOT NULL UNIQUE,
+                referral_code TEXT NOT NULL,
+                referral_url TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS user_registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_chat_id INTEGER REFERENCES telegram_subscriptions(chat_id),
+                telegram_username TEXT,
+                wallet_address TEXT NOT NULL,
+                dex_name TEXT NOT NULL,
+                access_granted BOOLEAN DEFAULT 0,
+                access_granted_at TIMESTAMP,
+                access_granted_by TEXT,
+                registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(telegram_chat_id, dex_name)
+            );
+            
+            -- Indexes for performance
+            CREATE INDEX IF NOT EXISTS idx_user_registrations_chat_id ON user_registrations(telegram_chat_id);
+            CREATE INDEX IF NOT EXISTS idx_user_registrations_access ON user_registrations(access_granted);
+            CREATE INDEX IF NOT EXISTS idx_user_registrations_dex ON user_registrations(dex_name);
+            
+            -- Insert default referral links
+            INSERT OR IGNORE INTO dex_referral_programs (dex_name, referral_code, referral_url) VALUES 
+            ('dydx', 'YOUR_DYDX_REF', 'https://trade.dydx.exchange/?ref=YOUR_DYDX_REF'),
+            ('hyperliquid', 'YOUR_HL_REF', 'https://app.hyperliquid.xyz/join/YOUR_HL_REF'),
+            ('paradex', 'YOUR_PARADEX_REF', 'https://app.paradex.trade/?ref=YOUR_PARADEX_REF');
             """
         
         cursor = self.connection.cursor()
@@ -432,6 +505,262 @@ class DatabaseManager:
                 
         except Exception as e:
             logger.error(f"Error logging notification: {e}")
+    
+    async def check_user_access(self, chat_id: int) -> bool:
+        """Check if user has access granted"""
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            SELECT COUNT(*) as access_count
+            FROM user_registrations
+            WHERE telegram_chat_id = %s AND access_granted = %s
+            """ if self.is_postgres else """
+            SELECT COUNT(*) as access_count
+            FROM user_registrations
+            WHERE telegram_chat_id = ? AND access_granted = 1
+            """
+            
+            cursor.execute(query, (chat_id, True) if self.is_postgres else (chat_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            return result['access_count'] > 0 if result else False
+            
+        except Exception as e:
+            logger.error(f"Error checking user access: {e}")
+            return False
+    
+    async def create_user_registration(self, chat_id: int, username: str, wallet_address: str, dex_name: str) -> Optional[int]:
+        """Create new registration"""
+        try:
+            cursor = self.connection.cursor()
+            
+            if self.is_postgres:
+                query = """
+                INSERT INTO user_registrations (telegram_chat_id, telegram_username, wallet_address, dex_name)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (telegram_chat_id, dex_name) DO UPDATE SET
+                    telegram_username = EXCLUDED.telegram_username,
+                    wallet_address = EXCLUDED.wallet_address,
+                    registration_date = CURRENT_TIMESTAMP
+                RETURNING id
+                """
+            else:
+                query = """
+                INSERT OR REPLACE INTO user_registrations (telegram_chat_id, telegram_username, wallet_address, dex_name)
+                VALUES (?, ?, ?, ?)
+                """
+            
+            cursor.execute(query, (chat_id, username, wallet_address, dex_name))
+            
+            if self.is_postgres:
+                registration_id = cursor.fetchone()['id']
+            else:
+                registration_id = cursor.lastrowid
+            
+            cursor.close()
+            
+            if self.is_postgres:
+                self.connection.commit()
+            else:
+                self.connection.commit()
+            
+            logger.info(f"Registration created: {registration_id} for chat_id: {chat_id}, dex: {dex_name}")
+            return registration_id
+            
+        except Exception as e:
+            logger.error(f"Error creating user registration: {e}")
+            return None
+    
+    async def get_referral_links(self) -> List[Dict[str, Any]]:
+        """Get all active referral programs"""
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            SELECT id, dex_name, referral_code, referral_url, is_active, created_at
+            FROM dex_referral_programs
+            WHERE is_active = %s
+            ORDER BY dex_name
+            """ if self.is_postgres else """
+            SELECT id, dex_name, referral_code, referral_url, is_active, created_at
+            FROM dex_referral_programs
+            WHERE is_active = 1
+            ORDER BY dex_name
+            """
+            
+            cursor.execute(query, (True,) if self.is_postgres else ())
+            
+            referrals = []
+            for row in cursor.fetchall():
+                referrals.append(dict(row))
+            
+            cursor.close()
+            return referrals
+            
+        except Exception as e:
+            logger.error(f"Error getting referral links: {e}")
+            return []
+    
+    async def get_pending_registrations(self) -> List[Dict[str, Any]]:
+        """Get all pending registrations for admin dashboard"""
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            SELECT ur.id, ur.telegram_chat_id, ur.telegram_username, ur.wallet_address, 
+                   ur.dex_name, ur.registration_date, ur.notes
+            FROM user_registrations ur
+            WHERE ur.access_granted = %s
+            ORDER BY ur.registration_date DESC
+            """ if self.is_postgres else """
+            SELECT ur.id, ur.telegram_chat_id, ur.telegram_username, ur.wallet_address, 
+                   ur.dex_name, ur.registration_date, ur.notes
+            FROM user_registrations ur
+            WHERE ur.access_granted = 0
+            ORDER BY ur.registration_date DESC
+            """
+            
+            cursor.execute(query, (False,) if self.is_postgres else ())
+            
+            registrations = []
+            for row in cursor.fetchall():
+                registrations.append(dict(row))
+            
+            cursor.close()
+            return registrations
+            
+        except Exception as e:
+            logger.error(f"Error getting pending registrations: {e}")
+            return []
+    
+    async def approve_user_access(self, registration_id: int, admin_username: str, notes: str = "") -> bool:
+        """Approve user access"""
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            UPDATE user_registrations
+            SET access_granted = %s, access_granted_at = %s, access_granted_by = %s, notes = %s
+            WHERE id = %s
+            """ if self.is_postgres else """
+            UPDATE user_registrations
+            SET access_granted = 1, access_granted_at = CURRENT_TIMESTAMP, access_granted_by = ?, notes = ?
+            WHERE id = ?
+            """
+            
+            if self.is_postgres:
+                cursor.execute(query, (True, datetime.now(), admin_username, notes, registration_id))
+            else:
+                cursor.execute(query, (admin_username, notes, registration_id))
+            
+            cursor.close()
+            
+            if self.is_postgres:
+                self.connection.commit()
+            else:
+                self.connection.commit()
+            
+            logger.info(f"Registration {registration_id} approved by {admin_username}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error approving user access: {e}")
+            return False
+    
+    async def get_user_registrations(self, chat_id: int) -> List[Dict[str, Any]]:
+        """Get user's registrations"""
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            SELECT ur.id, ur.dex_name, ur.wallet_address, ur.access_granted, 
+                   ur.access_granted_at, ur.access_granted_by, ur.registration_date, ur.notes
+            FROM user_registrations ur
+            WHERE ur.telegram_chat_id = %s
+            ORDER BY ur.registration_date DESC
+            """ if self.is_postgres else """
+            SELECT ur.id, ur.dex_name, ur.wallet_address, ur.access_granted, 
+                   ur.access_granted_at, ur.access_granted_by, ur.registration_date, ur.notes
+            FROM user_registrations ur
+            WHERE ur.telegram_chat_id = ?
+            ORDER BY ur.registration_date DESC
+            """
+            
+            cursor.execute(query, (chat_id,))
+            
+            registrations = []
+            for row in cursor.fetchall():
+                registrations.append(dict(row))
+            
+            cursor.close()
+            return registrations
+            
+        except Exception as e:
+            logger.error(f"Error getting user registrations: {e}")
+            return []
+    
+    async def get_all_registrations(self) -> List[Dict[str, Any]]:
+        """Get all registrations (pending + approved) for admin dashboard"""
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            SELECT ur.id, ur.telegram_chat_id, ur.telegram_username, ur.wallet_address, 
+                   ur.dex_name, ur.access_granted, ur.access_granted_at, ur.access_granted_by,
+                   ur.registration_date, ur.notes
+            FROM user_registrations ur
+            ORDER BY ur.registration_date DESC
+            """
+            
+            cursor.execute(query)
+            
+            registrations = []
+            for row in cursor.fetchall():
+                registrations.append(dict(row))
+            
+            cursor.close()
+            return registrations
+            
+        except Exception as e:
+            logger.error(f"Error getting all registrations: {e}")
+            return []
+    
+    async def update_referral_link(self, dex_name: str, referral_code: str, referral_url: str) -> bool:
+        """Update referral link for a specific DEX"""
+        try:
+            cursor = self.connection.cursor()
+            
+            if self.is_postgres:
+                query = """
+                INSERT INTO dex_referral_programs (dex_name, referral_code, referral_url)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (dex_name) DO UPDATE SET
+                    referral_code = EXCLUDED.referral_code,
+                    referral_url = EXCLUDED.referral_url,
+                    created_at = CURRENT_TIMESTAMP
+                """
+            else:
+                query = """
+                INSERT OR REPLACE INTO dex_referral_programs (dex_name, referral_code, referral_url)
+                VALUES (?, ?, ?)
+                """
+            
+            cursor.execute(query, (dex_name, referral_code, referral_url))
+            cursor.close()
+            
+            if self.is_postgres:
+                self.connection.commit()
+            else:
+                self.connection.commit()
+            
+            logger.info(f"Referral link updated for {dex_name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating referral link: {e}")
+            return False
     
     async def close(self):
         """Close database connection"""

@@ -3,7 +3,7 @@ import { FundingRateData } from '../data/mockFundingData';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
-  : 'http://localhost:5000/api';
+  : 'http://localhost:5001/api';
 
 const CACHE_KEY = 'funding_rates_cache';
 const CACHE_TIMESTAMP_KEY = 'funding_rates_cache_timestamp';
