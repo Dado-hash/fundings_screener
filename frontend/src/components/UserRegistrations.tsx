@@ -33,6 +33,13 @@ export const UserRegistrations = ({ onStatsUpdate }: UserRegistrationsProps) => 
     });
 
     if (response.success && response.data) {
+      console.log('Registrations data:', response.data); // Debug log
+      // Check for unexpected status values
+      response.data.forEach((reg, index) => {
+        if (!['pending', 'approved', 'rejected'].includes(reg.status)) {
+          console.warn(`Unexpected status "${reg.status}" at index ${index}:`, reg);
+        }
+      });
       setRegistrations(response.data);
     } else {
       toast.error(`Errore nel caricamento delle registrazioni: ${response.error}`);
@@ -96,12 +103,22 @@ export const UserRegistrations = ({ onStatsUpdate }: UserRegistrationsProps) => 
       rejected: { variant: 'destructive' as const, icon: XCircle, color: 'text-red-600' },
     };
 
-    const { variant, icon: Icon, color } = variants[status];
+    // Handle undefined or unexpected status values
+    const statusConfig = variants[status] || {
+      variant: 'outline' as const,
+      icon: Clock,
+      color: 'text-gray-600'
+    };
+
+    const { variant, icon: Icon, color } = statusConfig;
     
     return (
       <Badge variant={variant} className="flex items-center gap-1">
         <Icon className={`h-3 w-3 ${color}`} />
-        {status === 'pending' ? 'In attesa' : status === 'approved' ? 'Approvato' : 'Rifiutato'}
+        {status === 'pending' ? 'In attesa' : 
+         status === 'approved' ? 'Approvato' : 
+         status === 'rejected' ? 'Rifiutato' : 
+         status || 'Sconosciuto'}
       </Badge>
     );
   };
